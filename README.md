@@ -1,3 +1,5 @@
+- wip, no production ready build
+
 # arquillian-extension-aspectj
 
 A JBoss Arquillian extension for AspectJ.
@@ -8,22 +10,20 @@ Generate a configuration file and add it as a manifest resource to your deployme
 
 ```java
 
-String config =
-
 AspectjDescriptor().weaving()
-.within("ch.abertschi", recursive=true) // package or class as string
-.within("ch.abertschi.*.test") // package or class as string, wildcards
-.within("ch.abertschi:myjar.jar") // jar
+.within("ch.abertschi", recursive=true)             // package or class as string
+.within("ch.abertschi.*.test")                      // package or class as string, wildcards
+.within("ch.abertschi:myjar.jar")                   // jar
 .within(MyClass.class.getPackage(), recursive=true) // package of class
-.within(MyClass.class) // class
-.within(MyClass1.class, MyClass2.class ...) // classes
+.within(MyClass.class)                              // class
+.within(MyClass1.class, MyClass2.class ...)         // classes
 
-.exclude("ch.abertschi", recursive=true) // package or class as string
-.exclude("ch.abertschi.*.test) // package or class as string, wildcards
-.exclude("ch.abertschi:myjar.jar") // jar
+.exclude("ch.abertschi", recursive=true)            // package or class as string
+.exclude("ch.abertschi.*.test)                      // package or class as string, wildcards
+.exclude("ch.abertschi:myjar.jar")                  // jar
 .excluce(MyClass.class.getPackage(), recursive=true) // package of class
 .excluce(MyClass.class) // class
-.excluce(MyClass1.class, MyClass2.class ...) // classes
+.excluce(MyClass1.class, MyClass2.class ...)        // classes
 
 .aspects()
 .aspectJar("ch.abertschi.myaspects:jar")
@@ -41,13 +41,13 @@ compiler()
 {
     weaving: {
         include: [
-            'ch.abertschi.*',
-            'ch.abertschi.*.test',
-            'ch.abertschi:myjar.jar',
-            'MyClass'
+            "ch.abertschi.*",
+            "ch.abertschi.*.test",
+            "ch.abertschi:myjar.jar",
+            "MyClass"
         ],
         exclude: [
-            'ch.abertschi.exclude.*'
+            "ch.abertschi.exclude.*"
         ]
     },
     
