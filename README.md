@@ -19,10 +19,10 @@ AspectjDescriptor().weaving()
 .within(MyClass1.class, MyClass2.class ...)         // classes
 
 .exclude("ch.abertschi", recursive=true)            // package or class as string
-.exclude("ch.abertschi.*.test)                      // package or class as string, wildcards
+.exclude("ch.abertschi.*.test")                     // package or class as string, wildcards
 .exclude("ch.abertschi:myjar.jar")                  // jar
 .excluce(MyClass.class.getPackage(), recursive=true) // package of class
-.excluce(MyClass.class) // class
+.excluce(MyClass.class)                             // class
 .excluce(MyClass1.class, MyClass2.class ...)        // classes
 
 .aspects()
