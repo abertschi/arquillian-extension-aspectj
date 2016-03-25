@@ -36,6 +36,7 @@ compiler()
 // more options here https://eclipse.org/aspectj/doc/next/devguide/ltw-configuration.html#configuring-load-time-weaving-with-aopxml-files
 // more options here http://www.mojohaus.org/aspectj-maven-plugin/compile-mojo.html
 
+```
 
 ```javascript
 {
