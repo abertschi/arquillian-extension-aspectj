@@ -1,4 +1,4 @@
-package ch.abertschi.arquillian;
+package ch.abertschi.arquillian.descriptor;
 
 /**
  * Created by abertschi on 07/02/16.
@@ -55,7 +55,5 @@ interface AspectjDescriptorBuilder
     {
         CompilerOrOtherOption verbose();
     }
-
-
 }
 
