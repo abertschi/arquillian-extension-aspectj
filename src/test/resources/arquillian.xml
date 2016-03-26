@@ -11,6 +11,7 @@
             <!-- If you've already set the JBOSS_HOME environment variable, you can remove this configuration block -->
             <property name="jbossHome">target/jboss-as-7.1.1.Final</property>
             <property name="outputToConsole">true</property>
+            <!--<property name="javaVmArguments">-Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=y</property>-->
         </configuration>
     </container>
 

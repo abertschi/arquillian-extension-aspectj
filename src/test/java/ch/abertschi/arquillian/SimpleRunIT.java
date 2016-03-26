@@ -6,6 +6,7 @@ import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -18,8 +19,8 @@ public class SimpleRunIT
 {
 
     @Deployment
-    public static JavaArchive deploy() {
-        return ShrinkWrap.create(JavaArchive.class)
+    public static WebArchive deploy() {
+        return ShrinkWrap.create(WebArchive.class)
                 .addClass(DummyGreeter.class)
                 .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml");
     }

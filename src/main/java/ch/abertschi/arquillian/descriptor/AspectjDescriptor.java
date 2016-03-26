@@ -5,7 +5,6 @@ import org.codehaus.jackson.annotate.JsonMethod;
 import org.codehaus.jackson.map.ObjectMapper;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -13,7 +12,7 @@ import java.util.List;
 /**
  * Created by abertschi on 07/02/16.
  */
-public class AspectjDescriptor implements AspectjDescriptorBuilder,
+public class AspectJDescriptor implements AspectjDescriptorBuilder,
         AspectjDescriptorBuilder.AspectOrOtherOption,
         AspectjDescriptorBuilder.WeavingOrOtherOption,
         AspectjDescriptorBuilder.CompilerOrOtherOption
@@ -22,9 +21,9 @@ public class AspectjDescriptor implements AspectjDescriptorBuilder,
 
     public static void main(String[] args)
     {
-        String json = AspectjDescriptor.create()
+        String json = AspectJDescriptor.create()
                 .weaving()
-                .within(AspectjDescriptor.class)
+                .within(AspectJDescriptor.class)
                 .aspects()
                 .addJar("ch.test:test.jar")
                 .excludeAspect("ch.logging*")
@@ -41,13 +40,13 @@ public class AspectjDescriptor implements AspectjDescriptorBuilder,
     List<String> mAspectIncludes = new ArrayList<>();
     List<String> mAspectExcludes = new ArrayList<>();
 
-    private AspectjDescriptor()
+    private AspectJDescriptor()
     {
     }
 
     public static AspectjDescriptorBuilder create()
     {
-        return new AspectjDescriptor();
+        return new AspectJDescriptor();
     }
 
     @Override
@@ -126,7 +125,10 @@ public class AspectjDescriptor implements AspectjDescriptorBuilder,
     @Override
     public AspectOrOtherOption excludeAspect(Class<?>... types)
     {
-        Arrays.asList(types).forEach(type -> this.excludeAspect(type.getCanonicalName()));
+        for (Class<?> type : types)
+        {
+            this.excludeAspect(type.getCanonicalName());
+        }
         return this;
     }
 
@@ -154,7 +156,10 @@ public class AspectjDescriptor implements AspectjDescriptorBuilder,
     @Override
     public WeavingOrOtherOption within(Class<?>... types)
     {
-        Arrays.asList(types).forEach(type -> this.within(type.getCanonicalName()));
+        for (Class<?> type : types)
+        {
+            this.within(type.getCanonicalName());
+        }
         return this;
     }
 
@@ -185,7 +190,10 @@ public class AspectjDescriptor implements AspectjDescriptorBuilder,
     @Override
     public WeavingOrOtherOption exclude(Class<?>... types)
     {
-        Arrays.asList(types).forEach(type -> this.exclude(type.getCanonicalName()));
+        for (Class<?> type : types)
+        {
+            this.exclude(type.getCanonicalName());
+        }
         return this;
     }
 }
