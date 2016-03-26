@@ -15,15 +15,17 @@ interface AspectjDescriptorBuilder
 
     interface WeavingOption
     {
-        WeavingOrOtherOption within(String pattern, boolean recursive);
-
         WeavingOrOtherOption within(String pattern);
 
         WeavingOrOtherOption within(Package packageObject, boolean recursive);
 
-        WeavingOrOtherOption within(Package packageObject);
-
         WeavingOrOtherOption within(Class<?>... types);
+
+        WeavingOrOtherOption exclude(String pattern);
+
+        WeavingOrOtherOption exclude(Package packageObject, boolean recursive);
+
+        WeavingOrOtherOption exclude(Class<?>... types);
     }
 
     interface WeavingOrOtherOption extends AspectjDescriptorBuilder, WeavingOption
@@ -42,13 +44,15 @@ interface AspectjDescriptorBuilder
     {
         AspectOrOtherOption addJar(String name);
 
-        AspectOrOtherOption addAspect(String pattern);
+        AspectOrOtherOption includeAspect(String pattern);
 
-        AspectOrOtherOption addAspect(String pattern, boolean recursive);
+        AspectOrOtherOption includeAspect(Package packageName, boolean recursive);
 
-        AspectOrOtherOption addAspect(Package packageName, boolean recursive);
+        AspectOrOtherOption excludeAspect(String pattern);
 
-        AspectOrOtherOption addAspect(Package packageName);
+        AspectOrOtherOption excludeAspect(Package packageObject, boolean recursive);
+
+        AspectOrOtherOption excludeAspect(Class<?>... types);
     }
 
     interface CompilerOption
