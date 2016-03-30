@@ -23,70 +23,52 @@ Generate a configuration file *aspectj.json* and add it as a manifest resource t
 
 ```java
 
-AspectjDescriptor().weaving()
-.within("ch.abertschi", recursive=true)             // package or class as string
-.within("ch.abertschi.*.test")                      // package or class as string, wildcards
-.within("ch.abertschi:myjar.jar")                   // jar
-.within(MyClass.class.getPackage(), recursive=true) // package of class
-.within(MyClass.class)                              // class
-.within(MyClass1.class, MyClass2.class ...)         // classes
-
-.exclude("ch.abertschi", recursive=true)            // package or class as string
-.exclude("ch.abertschi.*.test")                     // package or class as string, wildcards
-.exclude("ch.abertschi:myjar.jar")                  // jar
-.excluce(MyClass.class.getPackage(), recursive=true) // package of class
-.excluce(MyClass.class)                             // class
-.excluce(MyClass1.class, MyClass2.class ...)        // classes
-
-.aspects()
-.aspectJar("ch.abertschi.myaspects:jar")
-.aspect(MyAspect.class)
-.aspect(MyAspect.class.getPackage)
-
-compiler()
-.verbose();
+String json = AspectJDescriptor
+        .create()
+        .weavingLibrary("webarchive.war")
+        .include("/WEB-INF/classes")
+        .exclude("/WEB-INF/classes/ch/abertschi/debug")
+        .add()
+        .weavingLibrary("webarchive.war/**/jar-to-weave-*.jar")
+        .include("/ch/abertschi")
+        .exclude("**test")
+        .add()
+        .aspectLibrary("ch.abertschi:mytest")
+        .exclude(CompilerOption.class)
+        .add()
+        .aspectLibrary("webarchive.war")
+        .include("/WEB-INF/classes/ch/abertschi/myaspects")
+        .add()
+        .exportAsString();
 
 // more options here https://eclipse.org/aspectj/doc/next/devguide/ltw-configuration.html#configuring-load-time-weaving-with-aopxml-files
 // more options here http://www.mojohaus.org/aspectj-maven-plugin/compile-mojo.html
 
 ```
 
-```javascript
+```json
 {
-    weaving: {
-        libs: [
-            "ch.abertschi:myjar.jar",
-            "mytests.jar"
-        ]
-        within: [
-            "ch.abertschi.*",
-            "ch.abertschi.*.test",
-            "MyClass"
-        ],
-        without: [ 
-            "ch.abertschi.exclude.*"
-        ]
-    },
-    
-    aspects: [
-                libs: [
-                    "ch.abertschi:myjar.jar",
-                    "mytests.jar"
-                ]
-                within: [
-                    "ch.abertschi.*",
-                    "ch.abertschi.*.test",
-                    "MyClass"
-                ],
-                without: [ 
-                    "ch.abertschi.exclude.*"
-                ]
-    ],
-    
-    compiler: {
-        verbose: true
-    }
+  "weaving" : [ {
+    "name" : "webarchive.war",
+    "includes" : [ "/WEB-INF/classes" ],
+    "excludes" : [ "/WEB-INF/classes/ch/abertschi/debug" ]
+  }, {
+    "name" : "webarchive.war/**/jar-to-weave-*.jar",
+    "includes" : [ "/ch/abertschi" ],
+    "excludes" : [ "**test" ]
+  } ],
+  "aspects" : [ {
+    "name" : "ch.abertschi:mytest",
+    "includes" : [ ],
+    "excludes" : [ "ch.abertschi.arquillian.descriptor.AspectjDescriptorBuilder.CompilerOption" ]
+  }, {
+    "name" : "webarchive.war",
+    "includes" : [ "/WEB-INF/classes/ch/abertschi/myaspects" ],
+    "excludes" : [ ]
+  } ],
+  "compiler" : {
+    "verbose" : false
+  }
 }
 ```
 
-- go through all archives of arquillian deployment, similar to https://github.com/abertschi/aspectj-archive-maven-plugin 

@@ -90,8 +90,6 @@ public class AspectJConfigExtractor implements ApplicationArchiveProcessor
                     {
                         Map<ArchivePath, JavaArchive> warJars = getJars(warEntry.getValue());
                     }
-                    processEnterpriseArchive(archive);
-
                     break;
 
                 case WAR:
@@ -107,28 +105,6 @@ public class AspectJConfigExtractor implements ApplicationArchiveProcessor
 
             }
         }
-    }
-
-    private void processEnterpriseArchive(Archive archive)
-    {
-        Map<ArchivePath, JavaArchive> jars = getJars(archive);
-        Map<ArchivePath, WebArchive> wars = getWebArchives(archive);
-
-        for(AspectJDescriptorModel.Library weavingLib: model.getWeaving())
-        {
-            for (Map.Entry<ArchivePath, JavaArchive> jarEntry : jars.entrySet())
-            {
-                if (jarEntry.getValue().getName().equals(weavingLib.getName()))
-                {
-                    System.out.println("Found weaving lib in deployment" + jarEntry);
-
-
-                }
-            }
-
-        }
-
-
     }
 
     private GenericArchive convertToArchive(Asset asset)

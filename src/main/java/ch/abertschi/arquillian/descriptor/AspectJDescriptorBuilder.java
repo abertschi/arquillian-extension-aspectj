@@ -19,7 +19,6 @@ public interface AspectjDescriptorBuilder
 
     interface LibraryFilterOption
     {
-
         LibraryFilterOption include(String pattern);
 
         LibraryFilterOption include(Package packageObject, boolean recursive);

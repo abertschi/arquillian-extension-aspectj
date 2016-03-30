@@ -26,29 +26,30 @@ public class SimpleRunIT
     @Deployment
     public static Archive<?> deploy()
     {
-//        WebArchive war = ShrinkWrap.create(WebArchive.class)
-//                .addClass(DummyGreeter.class)
-//                .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml");
+        WebArchive war = ShrinkWrap.create(WebArchive.class, "webarchive.war")
+                .addClass(DummyGreeter.class)
+                .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml");
 
         String json = AspectJDescriptor
                 .create()
-                .weavingLibrary("mytest.jar")
+                .weavingLibrary("webarchive.war")
+                .include("/WEB-INF/classes")
+                .exclude("/WEB-INF/classes/ch/abertschi/debug")
                 .add()
-                .aspectLibrary("mytest.jar")
+                .weavingLibrary("webarchive.war/**/jar-to-weave-*.jar")
+                .include("/ch/abertschi")
+                .exclude("**test")
+                .add()
+                .aspectLibrary("ch.abertschi:mytest")
+                .exclude(DummyGreeter.class)
                 .add()
                 .exportAsString();
+
+        System.out.println(json);
 //
         JavaArchive jar = ShrinkWrap.create(JavaArchive.class, "mytest.jar")
                 .addPackage(SimpleRunIT.class.getPackage())
-                .addAs
                 .addAsManifestResource(new StringAsset(json), "aspectj.json");
-//
-//
-//        war.addAsLibraries(jar);
-//
-//        return ShrinkWrap.create(EnterpriseArchive.class)
-//                .addAsLibraries(jar)
-//                .addAsModule(war);
 
         return jar;
     }

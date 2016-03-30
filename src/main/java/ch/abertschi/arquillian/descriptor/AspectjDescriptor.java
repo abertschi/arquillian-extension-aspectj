@@ -26,21 +26,22 @@ public class AspectJDescriptor implements AspectjDescriptorBuilder {
 
     public static void main(String[] args)
     {
-        String json = AspectJDescriptor.create()
-                .aspects()
-                .classes()
-                .library("")
-                .
-                .include(AspectJDescriptor.class)
-                .include(AspectJDescriptorModel.class.getPackage(), true)
-                .exclude(String.class)
+        String json = AspectJDescriptor
+                .create()
+                .weavingLibrary("webarchive.war")
+                .include("/WEB-INF/classes")
+                .exclude("/WEB-INF/classes/ch/abertschi/debug")
                 .add()
-                .weavingLibrary("classes-to-weave.jar")
-                .include(AspectJDescriptor.class)
+                .weavingLibrary("webarchive.war/**/jar-to-weave-*.jar")
+                .include("/ch/abertschi")
+                .exclude("**test")
                 .add()
-                .compiler()
-                .verbose()
-                .set()
+                .aspectLibrary("ch.abertschi:mytest")
+                .exclude(CompilerOption.class)
+                .add()
+                .aspectLibrary("webarchive.war")
+                .include("/WEB-INF/classes/ch/abertschi/myaspects")
+                .add()
                 .exportAsString();
 
         System.out.println(json);
