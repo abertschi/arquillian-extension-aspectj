@@ -1,63 +1,45 @@
 package ch.abertschi.arquillian.descriptor;
 
+import org.jboss.shrinkwrap.api.asset.Asset;
+
 /**
  * Created by abertschi on 07/02/16.
  */
-interface AspectjDescriptorBuilder
+public interface AspectjDescriptorBuilder
 {
-    AspectOption aspects();
+    LibraryFilterOption aspectLibrary(String name);
 
     CompilerOption compiler();
 
-    WeavingOption weaving();
+    LibraryFilterOption weavingLibrary(String name);
 
     String exportAsString();
 
-    interface WeavingOption
+    Asset exportAsAsset();
+
+    interface LibraryFilterOption
     {
-        WeavingOrOtherOption within(String pattern);
 
-        WeavingOrOtherOption within(Package packageObject, boolean recursive);
+        LibraryFilterOption include(String pattern);
 
-        WeavingOrOtherOption within(Class<?>... types);
+        LibraryFilterOption include(Package packageObject, boolean recursive);
 
-        WeavingOrOtherOption exclude(String pattern);
+        LibraryFilterOption include(Class<?>... types);
 
-        WeavingOrOtherOption exclude(Package packageObject, boolean recursive);
+        LibraryFilterOption exclude(String pattern);
 
-        WeavingOrOtherOption exclude(Class<?>... types);
-    }
+        LibraryFilterOption exclude(Package packageObject, boolean recursive);
 
-    interface WeavingOrOtherOption extends AspectjDescriptorBuilder, WeavingOption
-    {
-    }
+        LibraryFilterOption exclude(Class<?>... types);
 
-    interface AspectOrOtherOption extends AspectjDescriptorBuilder, AspectOption
-    {
-    }
-
-    interface CompilerOrOtherOption extends AspectjDescriptorBuilder, CompilerOption
-    {
-    }
-
-    interface AspectOption
-    {
-        AspectOrOtherOption addJar(String name);
-
-        AspectOrOtherOption includeAspect(String pattern);
-
-        AspectOrOtherOption includeAspect(Package packageName, boolean recursive);
-
-        AspectOrOtherOption excludeAspect(String pattern);
-
-        AspectOrOtherOption excludeAspect(Package packageObject, boolean recursive);
-
-        AspectOrOtherOption excludeAspect(Class<?>... types);
+        AspectjDescriptorBuilder add();
     }
 
     interface CompilerOption
     {
-        CompilerOrOtherOption verbose();
+        CompilerOption verbose();
+
+        AspectjDescriptorBuilder set();
     }
 }
 

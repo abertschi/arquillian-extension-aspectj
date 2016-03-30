@@ -10,6 +10,29 @@ public class Artifact
     private String version;
     private String scope;
 
+    public String getGav() {
+        String gav = "";
+
+        if (this.groupId != null && this.artifactName != null)
+        {
+            gav = String.format("%s:%s", this.groupId, this.artifactName);
+            if (this.version != null)
+            {
+                gav = String.format("%s:%s", gav, this.version);
+            }
+        }
+        else if (this.artifactName != null)
+        {
+            gav = this.getArtifactName();
+
+            if (this.version != null)
+            {
+                gav = String.format("%s:%s", gav, this.version);
+            }
+        }
+        return gav;
+    }
+
     public String getScope()
     {
         return scope;

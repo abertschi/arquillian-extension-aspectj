@@ -3,86 +3,90 @@ package ch.abertschi.arquillian.descriptor;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonMethod;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.jboss.shrinkwrap.api.asset.Asset;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
  * Created by abertschi on 07/02/16.
  */
-public class AspectJDescriptor implements AspectjDescriptorBuilder,
-        AspectjDescriptorBuilder.AspectOrOtherOption,
-        AspectjDescriptorBuilder.WeavingOrOtherOption,
-        AspectjDescriptorBuilder.CompilerOrOtherOption
-{
+public class AspectJDescriptor implements AspectjDescriptorBuilder {
 
-
-    public static void main(String[] args)
-    {
-        String json = AspectJDescriptor.create()
-                .weaving()
-                .within(AspectJDescriptor.class)
-                .aspects()
-                .addJar("ch.test:test.jar")
-                .excludeAspect("ch.logging*")
-                .compiler()
-                .verbose()
-                .exportAsString();
-
-        System.out.println(json);
-    }
-
-    boolean mVerbose = false;
-    List<String> mWeavingIncludes = new ArrayList<>();
-    List<String> mWeavingExcludes = new ArrayList<>();
-    List<String> mAspectIncludes = new ArrayList<>();
-    List<String> mAspectExcludes = new ArrayList<>();
-
-    private AspectJDescriptor()
-    {
-    }
+    private List<LibraryFilterOptionImpl> mWeavingLibs = new ArrayList<>();
+    private List<LibraryFilterOptionImpl> mAspectLibs = new ArrayList<>();
+    private CompilerOptionImpl mCompilerOptions = new CompilerOptionImpl(this);
 
     public static AspectjDescriptorBuilder create()
     {
         return new AspectJDescriptor();
     }
 
-    @Override
-    public AspectjDescriptorBuilder.AspectOption aspects()
+    public static void main(String[] args)
     {
-        return this;
+        String json = AspectJDescriptor.create()
+                .aspects()
+                .classes()
+                .library("")
+                .
+                .include(AspectJDescriptor.class)
+                .include(AspectJDescriptorModel.class.getPackage(), true)
+                .exclude(String.class)
+                .add()
+                .weavingLibrary("classes-to-weave.jar")
+                .include(AspectJDescriptor.class)
+                .add()
+                .compiler()
+                .verbose()
+                .set()
+                .exportAsString();
+
+        System.out.println(json);
     }
 
     @Override
-    public AspectjDescriptorBuilder.CompilerOption compiler()
+    public LibraryFilterOption aspectLibrary(String name)
     {
-        return this;
+        LibraryFilterOptionImpl lib = new LibraryFilterOptionImpl(this, name);
+        mAspectLibs.add(lib);
+        return lib;
     }
 
     @Override
-    public AspectjDescriptorBuilder.WeavingOption weaving()
+    public CompilerOption compiler()
     {
-        return this;
+        return mCompilerOptions;
+    }
+
+    @Override
+    public LibraryFilterOption weavingLibrary(String name)
+    {
+        LibraryFilterOptionImpl lib = new LibraryFilterOptionImpl(this, name);
+        mWeavingLibs.add(lib);
+        return lib;
     }
 
     @Override
     public String exportAsString()
     {
-        AspectJDescriptorModel m = new AspectJDescriptorModel();
-        m.aspects.includes = mAspectIncludes;
-        m.aspects.excludes = mAspectExcludes;
-        m.compiler.verbose = mVerbose;
-        m.weaving.includes = mWeavingIncludes;
-        m.weaving.excludes = mWeavingExcludes;
-
         ObjectMapper mapper;
         mapper = new ObjectMapper().setVisibility(JsonMethod.FIELD, JsonAutoDetect.Visibility.ANY);
+        AspectJDescriptorModel model = new AspectJDescriptorModel();
+        model.setCompiler(mCompilerOptions.getModel());
 
+        for (LibraryFilterOptionImpl lib : mWeavingLibs)
+        {
+            model.getWeaving().add(lib.getModel());
+        }
+        for (LibraryFilterOptionImpl lib : mAspectLibs)
+        {
+            model.getAspects().add(lib.getModel());
+        }
         try
         {
-            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(m);
+            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(model);
         }
         catch (IOException e)
         {
@@ -91,109 +95,8 @@ public class AspectJDescriptor implements AspectjDescriptorBuilder,
     }
 
     @Override
-    public AspectOrOtherOption addJar(String name)
+    public Asset exportAsAsset()
     {
-        return this.includeAspect(name);
-    }
-
-    @Override
-    public AspectOrOtherOption includeAspect(String pattern)
-    {
-        this.mAspectIncludes.add(pattern);
-        return this;
-    }
-
-    @Override
-    public AspectOrOtherOption includeAspect(Package packageObject, boolean recursive)
-    {
-        return this.includeAspect(this.getPackagePattern(packageObject, recursive));
-    }
-
-    @Override
-    public AspectOrOtherOption excludeAspect(String pattern)
-    {
-        this.mAspectExcludes.add(pattern);
-        return this;
-    }
-
-    @Override
-    public AspectOrOtherOption excludeAspect(Package packageObject, boolean recursive)
-    {
-        return this.excludeAspect(this.getPackagePattern(packageObject, recursive));
-    }
-
-    @Override
-    public AspectOrOtherOption excludeAspect(Class<?>... types)
-    {
-        for (Class<?> type : types)
-        {
-            this.excludeAspect(type.getCanonicalName());
-        }
-        return this;
-    }
-
-
-    @Override
-    public CompilerOrOtherOption verbose()
-    {
-        this.mVerbose = true;
-        return this;
-    }
-
-    @Override
-    public WeavingOrOtherOption within(String pattern)
-    {
-        this.mWeavingIncludes.add(pattern);
-        return this;
-    }
-
-    @Override
-    public WeavingOrOtherOption within(Package packageObject, boolean recursive)
-    {
-        return this.within(this.getPackagePattern(packageObject, recursive));
-    }
-
-    @Override
-    public WeavingOrOtherOption within(Class<?>... types)
-    {
-        for (Class<?> type : types)
-        {
-            this.within(type.getCanonicalName());
-        }
-        return this;
-    }
-
-    @Override
-    public WeavingOrOtherOption exclude(String pattern)
-    {
-        this.mWeavingExcludes.add(pattern);
-        return this;
-    }
-
-    @Override
-    public WeavingOrOtherOption exclude(Package packageObject, boolean recursive)
-    {
-        return this.exclude(this.getPackagePattern(packageObject, recursive));
-    }
-
-    private String getPackagePattern(Package p, boolean recursive)
-    {
-        String name = p.getName();
-
-        if (!name.endsWith("*") && recursive)
-        {
-            name = name + "*";
-        }
-        return name;
-    }
-
-    @Override
-    public WeavingOrOtherOption exclude(Class<?>... types)
-    {
-        for (Class<?> type : types)
-        {
-            this.exclude(type.getCanonicalName());
-        }
-        return this;
+        return new StringAsset(this.exportAsString());
     }
 }

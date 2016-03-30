@@ -2,11 +2,24 @@
 
 # arquillian-extension-aspectj
 
-A JBoss Arquillian extension for AspectJ.
+> A JBoss Arquillian extension for AspectJ.
+
+This extension compile-time weaves (CTW) classes in your arquillian deployment.
+    
+## Usage
+
+Add arquillian-extension-aspectj in scope test to your maven project.
+
+    <groupId>ch.abertschi.arquillian</groupId>
+    <artifactId>arquillian-extension-aspectj</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <scope>test</scope>
+    
+Add your configuration file to *META-INF/aspectj.json* of your deployment.
 
 ## API
 
-Generate a configuration file and add it as a manifest resource to your deployment.
+Generate a configuration file *aspectj.json* and add it as a manifest resource to your deployment.
 
 ```java
 
@@ -41,19 +54,33 @@ compiler()
 ```javascript
 {
     weaving: {
-        include: [
+        libs: [
+            "ch.abertschi:myjar.jar",
+            "mytests.jar"
+        ]
+        within: [
             "ch.abertschi.*",
             "ch.abertschi.*.test",
-            "ch.abertschi:myjar.jar",
             "MyClass"
         ],
-        exclude: [
+        without: [ 
             "ch.abertschi.exclude.*"
         ]
     },
     
     aspects: [
-        "ch.abertschi.myaspects:jar"
+                libs: [
+                    "ch.abertschi:myjar.jar",
+                    "mytests.jar"
+                ]
+                within: [
+                    "ch.abertschi.*",
+                    "ch.abertschi.*.test",
+                    "MyClass"
+                ],
+                without: [ 
+                    "ch.abertschi.exclude.*"
+                ]
     ],
     
     compiler: {
