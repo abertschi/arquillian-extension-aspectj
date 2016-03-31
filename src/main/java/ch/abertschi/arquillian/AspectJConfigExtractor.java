@@ -2,6 +2,7 @@ package ch.abertschi.arquillian;
 
 import ch.abertschi.arquillian.descriptor.AspectJDescriptor;
 import ch.abertschi.arquillian.descriptor.AspectJDescriptorModel;
+import com.sun.org.apache.xerces.internal.impl.xpath.regex.Match;
 import com.sun.tools.internal.xjc.outline.Aspect;
 import com.sun.tools.javac.comp.Enter;
 import org.apache.commons.io.IOUtils;
@@ -24,6 +25,7 @@ import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.jboss.shrinkwrap.resolver.api.maven.MavenStrategyStage;
 import org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenCoordinate;
+import org.springframework.util.AntPathMatcher;
 import sun.net.www.content.text.Generic;
 import sun.security.krb5.internal.crypto.ArcFourHmac;
 
@@ -33,10 +35,13 @@ import java.util.*;
 
 /**
  * Created by abertschi on 25/03/16.
+ * proof of concept
  */
 public class AspectJConfigExtractor implements ApplicationArchiveProcessor
 {
     private static final String CONFIG_FILE = "/META-INF/aspectj.json";
+
+    private final AntPathMatcher MATCHER = new AntPathMatcher();
 
     private Map<ArchivePath, WebArchive> getWebArchives(Archive<?> archive)
     {
@@ -56,7 +61,6 @@ public class AspectJConfigExtractor implements ApplicationArchiveProcessor
         return wars;
     }
 
-
     private Map<ArchivePath, JavaArchive> getJars(Archive<?> archive)
     {
         Map<ArchivePath, JavaArchive> jars = new HashMap<>();
@@ -75,36 +79,150 @@ public class AspectJConfigExtractor implements ApplicationArchiveProcessor
         return jars;
     }
 
+    private String prefixWithAnything(String pattern)
+    {
+        if (!pattern.startsWith("/") && !pattern.startsWith("*"))
+        {
+            pattern = "**/" + pattern;
+        }
+        return pattern;
+    }
+
+    private String suffixWithAnything(String pattern)
+    {
+        if (!pattern.endsWith("/") && !pattern.endsWith("*"))
+        {
+            pattern = pattern + "/**";
+        }
+        return pattern;
+    }
+
     @Override
     public void process(Archive<?> archive, TestClass testClass)
     {
         AspectJDescriptorModel model = getConfigurationFromArchive(archive);
-        if (model != null)
+        AntPathMatcher pathMatcher = new AntPathMatcher();
+
+        for (AspectJDescriptorModel.Library weavingLib : model.getWeaving())
         {
-            switch (ArchiveType.getTypeFromName(archive.getName()))
+            String pattern = this.prefixWithAnything(weavingLib.getName());
+
+            MatchResult result = match(archive, archive.getName(), pathMatcher, pattern);
+            if (result != null)
             {
-                case EAR:
-                    Map<ArchivePath, JavaArchive> jars = getJars(archive);
-                    Map<ArchivePath, WebArchive> wars = getWebArchives(archive);
-                    for (Map.Entry<ArchivePath, WebArchive> warEntry : wars.entrySet())
+
+                System.out.println("found archive:");
+                for (Map.Entry<ArchivePath, Node> entry : result.archive.getContent().entrySet())
+                {
+                    System.out.println(entry.getKey());
+
+                }
+
+                boolean includeAll = false;
+                boolean exclude = false;
+                if (weavingLib.getIncludes() == null || weavingLib.getIncludes().size() == 0)
+                {
+                    includeAll = true;
+                }
+                if (weavingLib.getExcludes() != null || weavingLib.getExcludes().size() > 0)
+                {
+                    exclude = true;
+                }
+
+                Archive<?> filteredArchive = result.archive.shallowCopy();
+                // filter archive
+                if (!includeAll || exclude)
+                {
+                    for (Map.Entry<ArchivePath, Node> entry : result.archive.getContent().entrySet())
                     {
-                        Map<ArchivePath, JavaArchive> warJars = getJars(warEntry.getValue());
+                        boolean isDirectory = entry.getValue().getAsset() == null;
+                        if (!isDirectory)
+                        {
+                            if (!includeAll && !this.matches(entry.getKey().get(), weavingLib.getIncludes())
+                                    || exclude && this.matches(entry.getKey().get(), weavingLib.getExcludes()))
+                            {
+                                System.out.println("Removing from " + result.archive.getName() + " " + entry.getKey());
+                                filteredArchive.delete(entry.getKey());
+                            }
+                        }
                     }
-                    break;
+                }
+                System.out.println("Filtered archive:");
+                for (Map.Entry<ArchivePath, Node> entry : filteredArchive.getContent().entrySet())
+                {
+                    System.out.println(entry.getKey());
 
-                case WAR:
-                    break;
+                }
 
-                case JAR:
-                    List<JavaArchive> weavingLibs = new ArrayList<>();
-
-                    break;
-
-                default:
-
-
+                // 1. get corresponding aspectj lib
+                // 2. compile weaving lib with aspect lib
+                // merge result into weaving lib, overwrite with changes of recompilation
             }
         }
+    }
+
+    private boolean matches(String path, List<String> patterns)
+    {
+        boolean matches = false;
+        for (String pat : patterns)
+        {
+            String pattern = this.suffixWithAnything(pat);
+            if (MATCHER.match(pattern, path))
+            {
+                matches = true;
+                break;
+            }
+        }
+        return matches;
+    }
+
+    private MatchResult match(Archive<?> archive, String basepath, final AntPathMatcher matcher, String pattern)
+    {
+        if (matcher.match(pattern, basepath))
+        {
+            System.out.println("matched!");
+            MatchResult result = new MatchResult();
+            result.path = basepath;
+            result.archive = archive;
+            return result;
+
+        }
+        for (Map.Entry<ArchivePath, Node> entry : archive.getContent().entrySet())
+        {
+            String path = basepath + entry.getKey().get().toString();
+            System.out.println("comparing " + pattern + " with " + path);
+
+            if (matcher.match(pattern, path))
+            {
+                Archive<?> subArchive = ShrinkWrap.create(ZipImporter.class)
+                        .importFrom(entry.getValue().getAsset().openStream()).as(GenericArchive.class);
+
+                System.out.println("matched!");
+                MatchResult result = new MatchResult();
+                result.path = path;
+                result.archive = subArchive;
+                return result;
+            }
+
+            if (path.endsWith(".jar") || path.endsWith(".war"))
+            {
+                Archive<?> subArchive = ShrinkWrap.create(ZipImporter.class)
+                        .importFrom(entry.getValue().getAsset().openStream()).as(GenericArchive.class);
+
+                MatchResult subResult = match(subArchive, path, matcher, pattern);
+                if (subResult != null)
+                {
+                    return subResult;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static class MatchResult
+    {
+        String path;
+        Archive<?> archive;
     }
 
     private GenericArchive convertToArchive(Asset asset)
@@ -155,72 +273,32 @@ public class AspectJConfigExtractor implements ApplicationArchiveProcessor
     }
 
 
-
-    private void exportArchive(Archive<?> archive)
+    private void exportArchive(Archive<?> archive, StringBuilder basePath)
     {
-        String base = "./target/explode";
-        File dir = new File(base);
+        System.out.println("Calling export with " + archive.getName());
+        if (basePath == null)
+        {
+            basePath = new StringBuilder("./target/explode/");
+        }
+
+        File dir = new File(basePath.toString());
         dir.mkdirs();
+
+        basePath.append(archive.getName());
+        basePath.append("/");
+
 
         archive.as(ExplodedExporter.class).exportExploded(dir);
 
         for (Map.Entry<ArchivePath, Node> entry : archive.getContent().entrySet())
         {
             String path = entry.getKey().get();
-            System.out.println(path);
-
-            if (path.endsWith(".jar"))
+            if (path.endsWith(".jar") || path.endsWith(".war"))
             {
-
-
-                JavaArchive jar = ShrinkWrap.create(ZipImporter.class)
-                        .importFrom(entry.getValue().getAsset().openStream()).as(JavaArchive.class);
-
-                File jarDir = new File(base + "/" + jar.getName());
-                jarDir.mkdirs();
-
-                jar.as(ExplodedExporter.class).exportExploded(jarDir);
-
-
-                for (Map.Entry<ArchivePath, Node> jarEntry : jar.getContent().entrySet())
-                {
-                    String jarPath = jarEntry.getKey().get();
-                    System.out.println(jarPath);
-                }
-
-            }
-            else if (path.endsWith(".war"))
-            {
-                GenericArchive war = ShrinkWrap.create(ZipImporter.class)
+                Archive<?> subArchive = ShrinkWrap.create(ZipImporter.class)
                         .importFrom(entry.getValue().getAsset().openStream()).as(GenericArchive.class);
 
-                File warDir = new File(base + "/" + war.getName());
-                warDir.mkdirs();
-
-                war.as(ExplodedExporter.class).exportExploded(warDir);
-
-                for (Map.Entry<ArchivePath, Node> warEntry : war.getContent().entrySet())
-                {
-                    String warPath = warEntry.getKey().get();
-                    System.out.println(warPath);
-
-//                    /lib
-//                    /lib/00c3b081-ab93-4a76-8c17-85b01598a72d.jar
-//                    /6c066f73-101b-40ba-bfb0-1751f9937f08.war
-//                    /WEB-INF/classes/ch
-//                    /WEB-INF/lib
-//                    /WEB-INF/lib/00c3b081-ab93-4a76-8c17-85b01598a72d.jar
-//                    /WEB-INF/classes/ch/abertschi/arquillian/DummyGreeter.class
-//                    /META-INF/beans.xml
-//                    /WEB-INF/classes/ch/abertschi/arquillian
-//                    /WEB-INF
-//                    /META-INF
-//                    /WEB-INF/classes/ch/abertschi
-//                    /WEB-INF/classes
-
-
-                }
-
+                exportArchive(subArchive, basePath);
             }
         }
     }

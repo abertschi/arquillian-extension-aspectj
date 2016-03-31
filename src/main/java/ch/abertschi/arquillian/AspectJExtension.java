@@ -13,6 +13,6 @@ public class AspectJExtension implements LoadableExtension
     @Override
     public void register(ExtensionBuilder builder)
     {
-        //builder.service(ApplicationArchiveProcessor.class, AspectJConfigExtractor.class);
+        builder.service(ApplicationArchiveProcessor.class, AspectJConfigExtractor.class);
     }
 }
