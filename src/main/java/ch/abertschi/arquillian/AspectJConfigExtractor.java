@@ -1,10 +1,7 @@
 package ch.abertschi.arquillian;
 
-import ch.abertschi.arquillian.descriptor.AspectJDescriptor;
-import ch.abertschi.arquillian.descriptor.AspectJDescriptorModel;
-import com.sun.org.apache.xerces.internal.impl.xpath.regex.Match;
-import com.sun.tools.internal.xjc.outline.Aspect;
-import com.sun.tools.javac.comp.Enter;
+import ch.abertschi.arquillian.descriptor.model.AspectJDescriptorModel;
+import ch.abertschi.arquillian.descriptor.model.WeavingLibrary;
 import org.apache.commons.io.IOUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonMethod;
@@ -13,21 +10,11 @@ import org.jboss.arquillian.container.test.spi.client.deployment.ApplicationArch
 import org.jboss.arquillian.test.spi.TestClass;
 import org.jboss.shrinkwrap.api.*;
 import org.jboss.shrinkwrap.api.asset.Asset;
-import org.jboss.shrinkwrap.api.container.LibraryContainer;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
-import org.jboss.shrinkwrap.api.exporter.ZipExporter;
-import org.jboss.shrinkwrap.api.importer.ExplodedImporter;
-import org.jboss.shrinkwrap.api.importer.StreamImporter;
 import org.jboss.shrinkwrap.api.importer.ZipImporter;
-import org.jboss.shrinkwrap.api.spec.EnterpriseArchive;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
-import org.jboss.shrinkwrap.resolver.api.maven.Maven;
-import org.jboss.shrinkwrap.resolver.api.maven.MavenStrategyStage;
-import org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenCoordinate;
 import org.springframework.util.AntPathMatcher;
-import sun.net.www.content.text.Generic;
-import sun.security.krb5.internal.crypto.ArcFourHmac;
 
 import java.io.File;
 import java.io.IOException;
@@ -103,7 +90,7 @@ public class AspectJConfigExtractor implements ApplicationArchiveProcessor
         AspectJDescriptorModel model = getConfigurationFromArchive(archive);
         AntPathMatcher pathMatcher = new AntPathMatcher();
 
-        for (AspectJDescriptorModel.Library weavingLib : model.getWeaving())
+        for (WeavingLibrary weavingLib : model.getWeaving())
         {
             String pattern = this.prefixWithAnything(weavingLib.getName());
 

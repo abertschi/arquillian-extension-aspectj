@@ -7,38 +7,45 @@ import org.jboss.shrinkwrap.api.asset.Asset;
  */
 public interface AspectjDescriptorBuilder
 {
-    LibraryFilterOption aspectLibrary(String name);
-
     CompilerOption compiler();
 
-    LibraryFilterOption weavingLibrary(String name);
+    WeavingLibraryOption weave(String name);
 
     String exportAsString();
 
-    Asset exportAsAsset();
-
-    interface LibraryFilterOption
+    interface LibraryFilterOption<T extends LibraryFilterOption<T>>
     {
-        LibraryFilterOption include(String pattern);
+        T include(String pattern);
 
-        LibraryFilterOption include(Package packageObject, boolean recursive);
+        T include(Package packageObject);
 
-        LibraryFilterOption include(Class<?>... types);
+        T include(Class<?>... types);
 
-        LibraryFilterOption exclude(String pattern);
+        T exclude(String pattern);
 
-        LibraryFilterOption exclude(Package packageObject, boolean recursive);
+        T exclude(Package packageObject);
 
-        LibraryFilterOption exclude(Class<?>... types);
+        T exclude(Class<?>... types);
+    }
 
-        AspectjDescriptorBuilder add();
+    interface WeavingLibraryOption extends LibraryFilterOption<WeavingLibraryOption>
+    {
+        AspectLibraryOption withAspects(String name);
+
+        AspectjDescriptorBuilder and();
+    }
+
+    interface AspectLibraryOption extends LibraryFilterOption<AspectLibraryOption>
+    {
+        AspectLibraryOption and(String name);
+        WeavingLibraryOption addAspects();
     }
 
     interface CompilerOption
     {
         CompilerOption verbose();
 
-        AspectjDescriptorBuilder set();
+        AspectjDescriptorBuilder and();
     }
 }
 

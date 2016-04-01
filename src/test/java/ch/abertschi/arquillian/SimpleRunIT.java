@@ -1,8 +1,6 @@
 package ch.abertschi.arquillian;
 
 import ch.abertschi.arquillian.descriptor.AspectJDescriptor;
-import ch.abertschi.arquillian.descriptor.AspectJDescriptorModel;
-import com.sun.tools.javac.comp.Enter;
 import junit.framework.Assert;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
@@ -36,17 +34,14 @@ public class SimpleRunIT
 
         String json = AspectJDescriptor
                 .create()
-                .weavingLibrary("webarchive.war")
+                .weave("webarchive.war")
                 .include("/WEB-INF/classes")
                 .exclude("/WEB-INF/classes/ch/abertschi/debug")
-                .add()
-                .weavingLibrary("webarchive.war/**/my*.jar")
+                .withAspects("ch.abertschi:mytest")
                 .include("/ch/abertschi")
                 .exclude("**test")
-                .add()
-                .aspectLibrary("ch.abertschi:mytest")
-                .exclude(DummyGreeter.class)
-                .add()
+                .addAspects()
+                .and()
                 .exportAsString();
 
         System.out.println(json);

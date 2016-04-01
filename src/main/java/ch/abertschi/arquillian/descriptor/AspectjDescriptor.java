@@ -1,5 +1,7 @@
 package ch.abertschi.arquillian.descriptor;
 
+import ch.abertschi.arquillian.descriptor.model.*;
+import ch.abertschi.arquillian.descriptor.model.Compiler;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonMethod;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -13,11 +15,11 @@ import java.util.List;
 /**
  * Created by abertschi on 07/02/16.
  */
-public class AspectJDescriptor implements AspectjDescriptorBuilder {
+public class AspectJDescriptor implements AspectjDescriptorBuilder
+{
 
-    private List<LibraryFilterOptionImpl> mWeavingLibs = new ArrayList<>();
-    private List<LibraryFilterOptionImpl> mAspectLibs = new ArrayList<>();
-    private CompilerOptionImpl mCompilerOptions = new CompilerOptionImpl(this);
+    private List<WeavingLibraryBuilder> mWeavingBuilders = new ArrayList<>();
+    private CompilerOptionBuilder mCompilerBuilder = new CompilerOptionBuilder(this);
 
     public static AspectjDescriptorBuilder create()
     {
@@ -28,45 +30,41 @@ public class AspectJDescriptor implements AspectjDescriptorBuilder {
     {
         String json = AspectJDescriptor
                 .create()
-                .weavingLibrary("webarchive.war")
+                .weave("webarchive.war")
                 .include("/WEB-INF/classes")
                 .exclude("/WEB-INF/classes/ch/abertschi/debug")
-                .add()
-                .weavingLibrary("webarchive.war/**/jar-to-weave-*.jar")
+                .withAspects("ch.abertschi:mytest")
+                .and("ch.abertschi:mytest2")
+                .addAspects()
+                .and()
+                .weave("webarchive.war/**/jar-to-weave-*.jar")
                 .include("/ch/abertschi")
                 .exclude("**test")
-                .add()
-                .aspectLibrary("ch.abertschi:mytest")
+                .withAspects("ch.abertschi:mytest")
                 .exclude(CompilerOption.class)
-                .add()
-                .aspectLibrary("webarchive.war")
-                .include("/WEB-INF/classes/ch/abertschi/myaspects")
-                .add()
+                .addAspects()
+                .and()
+                .compiler()
+                .verbose()
+                .and()
                 .exportAsString();
 
         System.out.println(json);
     }
 
-    @Override
-    public LibraryFilterOption aspectLibrary(String name)
-    {
-        LibraryFilterOptionImpl lib = new LibraryFilterOptionImpl(this, name);
-        mAspectLibs.add(lib);
-        return lib;
-    }
 
     @Override
     public CompilerOption compiler()
     {
-        return mCompilerOptions;
+        return mCompilerBuilder;
     }
 
     @Override
-    public LibraryFilterOption weavingLibrary(String name)
+    public WeavingLibraryOption weave(String name)
     {
-        LibraryFilterOptionImpl lib = new LibraryFilterOptionImpl(this, name);
-        mWeavingLibs.add(lib);
-        return lib;
+        WeavingLibraryBuilder builder = new WeavingLibraryBuilder(this, name);
+        mWeavingBuilders.add(builder);
+        return builder;
     }
 
     @Override
@@ -75,16 +73,13 @@ public class AspectJDescriptor implements AspectjDescriptorBuilder {
         ObjectMapper mapper;
         mapper = new ObjectMapper().setVisibility(JsonMethod.FIELD, JsonAutoDetect.Visibility.ANY);
         AspectJDescriptorModel model = new AspectJDescriptorModel();
-        model.setCompiler(mCompilerOptions.getModel());
-
-        for (LibraryFilterOptionImpl lib : mWeavingLibs)
+        model.setCompiler(mCompilerBuilder.build());
+        List<WeavingLibrary> weavingLibs = new ArrayList<>();
+        for (WeavingLibraryBuilder builder : mWeavingBuilders)
         {
-            model.getWeaving().add(lib.getModel());
+            weavingLibs.add(builder.build());
         }
-        for (LibraryFilterOptionImpl lib : mAspectLibs)
-        {
-            model.getAspects().add(lib.getModel());
-        }
+        model.setWeaving(weavingLibs);
         try
         {
             return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(model);
@@ -93,11 +88,5 @@ public class AspectJDescriptor implements AspectjDescriptorBuilder {
         {
             throw new RuntimeException("Can not create json file", e);
         }
-    }
-
-    @Override
-    public Asset exportAsAsset()
-    {
-        return new StringAsset(this.exportAsString());
     }
 }

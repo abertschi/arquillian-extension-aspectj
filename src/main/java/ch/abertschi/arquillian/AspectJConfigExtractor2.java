@@ -1,6 +1,6 @@
 //package ch.abertschi.arquillian;
 //
-//import ch.abertschi.arquillian.descriptor.AspectJDescriptorModel;
+//import ch.abertschi.arquillian.descriptor.model.AspectJDescriptorModel;
 //import org.apache.commons.io.IOUtils;
 //import org.codehaus.jackson.annotate.JsonAutoDetect;
 //import org.codehaus.jackson.annotate.JsonMethod;

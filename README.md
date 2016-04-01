@@ -23,24 +23,39 @@ Generate a configuration file *aspectj.json* and add it as a manifest resource t
 
 ```java
 
-String json = AspectJDescriptor
-        .create()
-        .weavingLibrary("webarchive.war")
-        .include("/WEB-INF/classes")
-        .exclude("/WEB-INF/classes/ch/abertschi/debug")
-        .add()
-        .weavingLibrary("webarchive.war/**/jar-to-weave-*.jar")
-        .include("/ch/abertschi")
-        .exclude("**test")
-        .add()
-        .aspectLibrary("ch.abertschi:mytest")
-        .exclude(CompilerOption.class)
-        .add()
-        .aspectLibrary("webarchive.war")
-        .include("/WEB-INF/classes/ch/abertschi/myaspects")
-        .add()
-        .exportAsString();
+@Deployment
+public static Archive<?> deploy()
+{
 
+    String json = AspectJDescriptor
+            .create()
+            .weave("webarchive.war")
+                .include("/WEB-INF/classes")
+                .exclude("/WEB-INF/classes/ch/abertschi/debug")
+                .withAspects("ch.abertschi:mytest")
+                .and("ch.abertschi:mytest2")
+                .addAspects()
+            .and()
+            .weave("webarchive.war/**/jar-to-weave-*.jar")
+                .include("/ch/abertschi")
+                .exclude("**test")
+                .withAspects("ch.abertschi:mytest")
+                .exclude(CompilerOption.class)
+                .addAspects()
+            .and()
+            .compiler()
+            .verbose()
+            .and()
+            .exportAsString();
+        
+
+   EnterpriseArchive ear = ShrinkWrap.create(EnterpriseArchive.class, "my-ear.ear")
+        .addAsManifestResource(new StringAsset(json), "aspectj.json")
+       // ...;
+       
+    return ear;
+}
+    
 // more options here https://eclipse.org/aspectj/doc/next/devguide/ltw-configuration.html#configuring-load-time-weaving-with-aopxml-files
 // more options here http://www.mojohaus.org/aspectj-maven-plugin/compile-mojo.html
 
@@ -51,23 +66,28 @@ String json = AspectJDescriptor
   "weaving" : [ {
     "name" : "webarchive.war",
     "includes" : [ "/WEB-INF/classes" ],
-    "excludes" : [ "/WEB-INF/classes/ch/abertschi/debug" ]
+    "excludes" : [ "/WEB-INF/classes/ch/abertschi/debug" ],
+    "aspects" : [ {
+      "name" : "ch.abertschi:mytest",
+      "includes" : [ ],
+      "excludes" : [ ]
+    }, {
+      "name" : "ch.abertschi:mytest2",
+      "includes" : [ ],
+      "excludes" : [ ]
+    } ]
   }, {
     "name" : "webarchive.war/**/jar-to-weave-*.jar",
     "includes" : [ "/ch/abertschi" ],
-    "excludes" : [ "**test" ]
-  } ],
-  "aspects" : [ {
-    "name" : "ch.abertschi:mytest",
-    "includes" : [ ],
-    "excludes" : [ "ch.abertschi.arquillian.descriptor.AspectjDescriptorBuilder.CompilerOption" ]
-  }, {
-    "name" : "webarchive.war",
-    "includes" : [ "/WEB-INF/classes/ch/abertschi/myaspects" ],
-    "excludes" : [ ]
+    "excludes" : [ "**test" ],
+    "aspects" : [ {
+      "name" : "ch.abertschi:mytest",
+      "includes" : [ ],
+      "excludes" : [ "**/ch/abertschi/arquillian/descriptor/AspectjDescriptorBuilder/CompilerOption*" ]
+    } ]
   } ],
   "compiler" : {
-    "verbose" : false
+    "verbose" : true
   }
 }
 ```

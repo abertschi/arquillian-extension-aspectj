@@ -1,6 +1,6 @@
 package ch.abertschi.arquillian;
 
-import ch.abertschi.arquillian.descriptor.AspectJDescriptorModel;
+import ch.abertschi.arquillian.descriptor.model.AspectJDescriptorModel;
 
 /**
  * Created by abertschi on 26/03/16.
