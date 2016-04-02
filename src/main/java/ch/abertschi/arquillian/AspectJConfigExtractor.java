@@ -1,19 +1,26 @@
 package ch.abertschi.arquillian;
 
+import ch.abertschi.arquillian.aj.AjCompiler;
 import ch.abertschi.arquillian.descriptor.model.AspectJDescriptorModel;
+import ch.abertschi.arquillian.descriptor.model.AspectLibrary;
 import ch.abertschi.arquillian.descriptor.model.WeavingLibrary;
+import com.github.underscore.$;
 import org.apache.commons.io.IOUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonMethod;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.javatuples.Pair;
+import org.javatuples.Triplet;
 import org.jboss.arquillian.container.test.spi.client.deployment.ApplicationArchiveProcessor;
 import org.jboss.arquillian.test.spi.TestClass;
 import org.jboss.shrinkwrap.api.*;
 import org.jboss.shrinkwrap.api.asset.Asset;
+import org.jboss.shrinkwrap.api.container.LibraryContainer;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
 import org.jboss.shrinkwrap.api.importer.ZipImporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
+import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.springframework.util.AntPathMatcher;
 
 import java.io.File;
@@ -66,7 +73,7 @@ public class AspectJConfigExtractor implements ApplicationArchiveProcessor
         return jars;
     }
 
-    private String prefixWithAnything(String pattern)
+    private String matchAnyParentDirectory(String pattern)
     {
         if (!pattern.startsWith("/") && !pattern.startsWith("*"))
         {
@@ -75,7 +82,7 @@ public class AspectJConfigExtractor implements ApplicationArchiveProcessor
         return pattern;
     }
 
-    private String suffixWithAnything(String pattern)
+    private String transformToMatchAnyChildDirectory(String pattern)
     {
         if (!pattern.endsWith("/") && !pattern.endsWith("*"))
         {
@@ -84,77 +91,154 @@ public class AspectJConfigExtractor implements ApplicationArchiveProcessor
         return pattern;
     }
 
+
     @Override
-    public void process(Archive<?> archive, TestClass testClass)
+    public void process(Archive<?> deployableArchive, TestClass testClass)
     {
-        AspectJDescriptorModel model = getConfigurationFromArchive(archive);
-        AntPathMatcher pathMatcher = new AntPathMatcher();
-
-        for (WeavingLibrary weavingLib : model.getWeaving())
+        AspectJDescriptorModel model = getConfigurationFromArchive(deployableArchive);
+        if (!$.isNull(model))
         {
-            String pattern = this.prefixWithAnything(weavingLib.getName());
-
-            MatchResult result = match(archive, archive.getName(), pathMatcher, pattern);
-            if (result != null)
+            AjCompiler compiler = new AjCompiler();
+            for (WeavingLibrary weavingDescriptor : model.getWeaving())
             {
+                List<Pair<MatchResult, Archive>> weavings = getWeavingLibraries(deployableArchive, weavingDescriptor);
+                List<Archive<?>> aspects = getAspectLibraries(deployableArchive, weavingDescriptor.getAspects());
 
-                System.out.println("found archive:");
-                for (Map.Entry<ArchivePath, Node> entry : result.archive.getContent().entrySet())
-                {
-                    System.out.println(entry.getKey());
+                //Archive<?> compiled = compiler.compileTimeWeave(null, aspects);
 
-                }
 
-                boolean includeAll = false;
-                boolean exclude = false;
-                if (weavingLib.getIncludes() == null || weavingLib.getIncludes().size() == 0)
+                for (Archive<?> a : aspects)
                 {
-                    includeAll = true;
-                }
-                if (weavingLib.getExcludes() != null || weavingLib.getExcludes().size() > 0)
-                {
-                    exclude = true;
-                }
-
-                Archive<?> filteredArchive = result.archive.shallowCopy();
-                // filter archive
-                if (!includeAll || exclude)
-                {
-                    for (Map.Entry<ArchivePath, Node> entry : result.archive.getContent().entrySet())
+                    System.out.println("Filtered archive:");
+                    for (Map.Entry<ArchivePath, Node> entry : a.getContent().entrySet())
                     {
-                        boolean isDirectory = entry.getValue().getAsset() == null;
-                        if (!isDirectory)
-                        {
-                            if (!includeAll && !this.matches(entry.getKey().get(), weavingLib.getIncludes())
-                                    || exclude && this.matches(entry.getKey().get(), weavingLib.getExcludes()))
-                            {
-                                System.out.println("Removing from " + result.archive.getName() + " " + entry.getKey());
-                                filteredArchive.delete(entry.getKey());
-                            }
-                        }
+                        System.out.println(entry.getKey());
+
                     }
-                }
-                System.out.println("Filtered archive:");
-                for (Map.Entry<ArchivePath, Node> entry : filteredArchive.getContent().entrySet())
-                {
-                    System.out.println(entry.getKey());
 
                 }
 
-                // 1. get corresponding aspectj lib
-                // 2. compile weaving lib with aspect lib
-                // merge result into weaving lib, overwrite with changes of recompilation
             }
         }
+
     }
 
-    private boolean matches(String path, List<String> patterns)
+
+
+
+    private List<Archive<?>> getAspectLibraries(Archive<?> sourceArchive, List<AspectLibrary> aspectDescriptors)
+    {
+        List<Archive<?>> returns = new ArrayList<>();
+        for (AspectLibrary aspectDescriptor : aspectDescriptors)
+        {
+            List<Archive<?>> aspects;
+            if (aspectDescriptor.getName().contains(":")) // G:A:V:C
+            {
+                aspects = resolveWithMaven(aspectDescriptor.getName());
+            }
+            else
+            {
+                String searchPattern = this.matchAnyParentDirectory(aspectDescriptor.getName());
+                aspects = $.map(searchInArchive(sourceArchive, searchPattern), matchResult -> matchResult.archive);
+            }
+            if ($.isEmpty(aspects))
+            {
+                String msg = String.format("aspect %s was neither found in deployable archive nor in maven repository", aspectDescriptor.getName());
+                throw new RuntimeException(msg);
+            }
+
+            List<String> aspectIncludes = this.transformToMatchAnyChildDirectory(aspectDescriptor.getIncludes());
+            List<String> aspectExcludes = this.transformToMatchAnyChildDirectory(aspectDescriptor.getExcludes());
+            for (Archive<?> aspect : aspects)
+            {
+                returns.add(filterArchive(aspect, aspectIncludes, aspectExcludes));
+            }
+        }
+        return Collections.unmodifiableList(returns);
+    }
+
+    private List<Pair<MatchResult, Archive>> getWeavingLibraries(Archive<?> sourceArchive, WeavingLibrary weavingDescriptor)
+    {
+        List<Pair<MatchResult, Archive>> returns = new ArrayList<>();
+
+        String pattern = this.matchAnyParentDirectory(weavingDescriptor.getName());
+        List<MatchResult> weavings = searchInArchive(sourceArchive, pattern);
+        if (!$.isEmpty(weavings))
+        {
+            for (MatchResult weaving : weavings)
+            {
+                List<String> includes = this.transformToMatchAnyChildDirectory(weavingDescriptor.getIncludes());
+                List<String> excludes = this.transformToMatchAnyChildDirectory(weavingDescriptor.getExcludes());
+                Archive<?> filtered = filterArchive(weaving.archive, includes, excludes);
+
+                returns.add(new Pair<>(weaving, filtered));
+            }
+        }
+        else
+        {
+            String msg = String.format("weaving %s could not be found in deployable", weavingDescriptor.getName());
+            throw new RuntimeException(msg);
+        }
+        return Collections.unmodifiableList(returns);
+    }
+
+    private List<Archive<?>> resolveWithMaven(String name)
+    {
+        List<Archive<?>> results = new ArrayList<>();
+        for (JavaArchive jar : Maven.resolver().resolve(name).withTransitivity().asList(JavaArchive.class))
+        {
+            results.add(jar);
+        }
+        return results;
+    }
+
+    private Archive<?> filterArchive(Archive<?> archive, List<String> includes, List<String> excludes)
+    {
+        boolean hasIncludeFilter = false;
+        boolean hasExcludeFilter = false;
+        if (includes != null || includes.size() > 0)
+        {
+            hasIncludeFilter = true;
+        }
+        if (excludes != null || excludes.size() > 0)
+        {
+            hasExcludeFilter = true;
+        }
+        Archive<?> filteredArchive = archive.shallowCopy();
+        if (hasIncludeFilter || hasExcludeFilter)
+        {
+            for (Map.Entry<ArchivePath, Node> entry : archive.getContent().entrySet())
+            {
+                boolean isFile = entry.getValue().getAsset() == null;
+                if (isFile)
+                {
+                    if (hasIncludeFilter && !this.matchesPattern(entry.getKey().get(), includes)
+                            || hasExcludeFilter && this.matchesPattern(entry.getKey().get(), excludes))
+                    {
+                        System.out.println("Removing from " + archive.getName() + " " + entry.getKey());
+                        filteredArchive.delete(entry.getKey());
+                    }
+                }
+            }
+        }
+
+        // 1. get corresponding aspectj lib
+        // 2. compile weaving lib with aspect lib
+        // merge result into weaving lib, overwrite with changes of recompilation
+        return filteredArchive;
+    }
+
+    private List<String> transformToMatchAnyChildDirectory(List<String> patterns)
+    {
+        return Collections.unmodifiableList($.map(patterns, s -> this.transformToMatchAnyChildDirectory(s)));
+    }
+
+    private boolean matchesPattern(String path, List<String> patterns)
     {
         boolean matches = false;
         for (String pat : patterns)
         {
-            String pattern = this.suffixWithAnything(pat);
-            if (MATCHER.match(pattern, path))
+            if (MATCHER.match(pat, path))
             {
                 matches = true;
                 break;
@@ -163,51 +247,56 @@ public class AspectJConfigExtractor implements ApplicationArchiveProcessor
         return matches;
     }
 
-    private MatchResult match(Archive<?> archive, String basepath, final AntPathMatcher matcher, String pattern)
+    private List<MatchResult> searchInArchive(Archive<?> archive, String pattern)
     {
-        if (matcher.match(pattern, basepath))
+        return _searchInArchive(archive, archive.getName(), pattern);
+    }
+
+    private List<MatchResult> _searchInArchive(Archive<?> archive, String basepath, String pattern)
+    {
+        List<MatchResult> returns = new ArrayList<>();
+        if (MATCHER.match(pattern, basepath))
         {
             System.out.println("matched!");
             MatchResult result = new MatchResult();
             result.path = basepath;
             result.archive = archive;
-            return result;
-
+            result.parentContainer = null;
+            returns.add(result);
         }
         for (Map.Entry<ArchivePath, Node> entry : archive.getContent().entrySet())
         {
             String path = basepath + entry.getKey().get().toString();
             System.out.println("comparing " + pattern + " with " + path);
 
-            if (matcher.match(pattern, path))
+            if (MATCHER.match(pattern, path))
             {
-                Archive<?> subArchive = ShrinkWrap.create(ZipImporter.class)
-                        .importFrom(entry.getValue().getAsset().openStream()).as(GenericArchive.class);
-
+                Archive<?> subArchive = convertToArchive(entry.getValue().getAsset());
                 System.out.println("matched!");
                 MatchResult result = new MatchResult();
                 result.path = path;
                 result.archive = subArchive;
-                return result;
+                result.parentContainer = archive;
+                returns.add(result);
             }
 
             if (path.endsWith(".jar") || path.endsWith(".war"))
             {
-                Archive<?> subArchive = ShrinkWrap.create(ZipImporter.class)
-                        .importFrom(entry.getValue().getAsset().openStream()).as(GenericArchive.class);
+                Archive<?> subArchive = convertToArchive(entry.getValue().getAsset());
 
-                MatchResult subResult = match(subArchive, path, matcher, pattern);
-                if (subResult != null)
+                List<MatchResult> subResults = _searchInArchive(subArchive, path, pattern);
+                if (subResults != null && subResults.size() > 0)
                 {
-                    return subResult;
+                    returns.addAll(subResults);
                 }
             }
         }
-        return null;
+        return returns;
     }
 
     private static class MatchResult
     {
+        Archive<?> parentContainer;
         String path;
         Archive<?> archive;
     }
