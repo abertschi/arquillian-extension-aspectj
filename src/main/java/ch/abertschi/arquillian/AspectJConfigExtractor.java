@@ -10,16 +10,13 @@ import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonMethod;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.javatuples.Pair;
-import org.javatuples.Triplet;
 import org.jboss.arquillian.container.test.spi.client.deployment.ApplicationArchiveProcessor;
 import org.jboss.arquillian.test.spi.TestClass;
 import org.jboss.shrinkwrap.api.*;
 import org.jboss.shrinkwrap.api.asset.Asset;
-import org.jboss.shrinkwrap.api.container.LibraryContainer;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
 import org.jboss.shrinkwrap.api.importer.ZipImporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.springframework.util.AntPathMatcher;
 
@@ -37,61 +34,6 @@ public class AspectJConfigExtractor implements ApplicationArchiveProcessor
 
     private final AntPathMatcher MATCHER = new AntPathMatcher();
 
-    private Map<ArchivePath, WebArchive> getWebArchives(Archive<?> archive)
-    {
-        Map<ArchivePath, WebArchive> wars = new HashMap<>();
-        for (Map.Entry<ArchivePath, Node> entry : archive.getContent().entrySet())
-        {
-            if (entry.getKey().get().endsWith(".war"))
-            {
-                WebArchive war = ShrinkWrap
-                        .create(ZipImporter.class)
-                        .importFrom(entry.getValue().getAsset().openStream())
-                        .as(WebArchive.class);
-
-                wars.put(entry.getKey(), war);
-            }
-        }
-        return wars;
-    }
-
-    private Map<ArchivePath, JavaArchive> getJars(Archive<?> archive)
-    {
-        Map<ArchivePath, JavaArchive> jars = new HashMap<>();
-        for (Map.Entry<ArchivePath, Node> entry : archive.getContent().entrySet())
-        {
-            if (entry.getKey().get().endsWith(".jar"))
-            {
-                JavaArchive jar = ShrinkWrap
-                        .create(ZipImporter.class)
-                        .importFrom(entry.getValue().getAsset().openStream())
-                        .as(JavaArchive.class);
-
-                jars.put(entry.getKey(), jar);
-            }
-        }
-        return jars;
-    }
-
-    private String matchAnyParentDirectory(String pattern)
-    {
-        if (!pattern.startsWith("/") && !pattern.startsWith("*"))
-        {
-            pattern = "**/" + pattern;
-        }
-        return pattern;
-    }
-
-    private String transformToMatchAnyChildDirectory(String pattern)
-    {
-        if (!pattern.endsWith("/") && !pattern.endsWith("*"))
-        {
-            pattern = pattern + "/**";
-        }
-        return pattern;
-    }
-
-
     @Override
     public void process(Archive<?> deployableArchive, TestClass testClass)
     {
@@ -106,7 +48,6 @@ public class AspectJConfigExtractor implements ApplicationArchiveProcessor
 
                 //Archive<?> compiled = compiler.compileTimeWeave(null, aspects);
 
-
                 for (Archive<?> a : aspects)
                 {
                     System.out.println("Filtered archive:");
@@ -115,16 +56,10 @@ public class AspectJConfigExtractor implements ApplicationArchiveProcessor
                         System.out.println(entry.getKey());
 
                     }
-
                 }
-
             }
         }
-
     }
-
-
-
 
     private List<Archive<?>> getAspectLibraries(Archive<?> sourceArchive, List<AspectLibrary> aspectDescriptors)
     {
@@ -138,7 +73,7 @@ public class AspectJConfigExtractor implements ApplicationArchiveProcessor
             }
             else
             {
-                String searchPattern = this.matchAnyParentDirectory(aspectDescriptor.getName());
+                String searchPattern = this.transformToMatchAnyParentDirectory(aspectDescriptor.getName());
                 aspects = $.map(searchInArchive(sourceArchive, searchPattern), matchResult -> matchResult.archive);
             }
             if ($.isEmpty(aspects))
@@ -160,17 +95,17 @@ public class AspectJConfigExtractor implements ApplicationArchiveProcessor
     private List<Pair<MatchResult, Archive>> getWeavingLibraries(Archive<?> sourceArchive, WeavingLibrary weavingDescriptor)
     {
         List<Pair<MatchResult, Archive>> returns = new ArrayList<>();
-
-        String pattern = this.matchAnyParentDirectory(weavingDescriptor.getName());
+        String pattern = this.transformToMatchAnyParentDirectory(weavingDescriptor.getName());
         List<MatchResult> weavings = searchInArchive(sourceArchive, pattern);
+
         if (!$.isEmpty(weavings))
         {
             for (MatchResult weaving : weavings)
             {
                 List<String> includes = this.transformToMatchAnyChildDirectory(weavingDescriptor.getIncludes());
                 List<String> excludes = this.transformToMatchAnyChildDirectory(weavingDescriptor.getExcludes());
-                Archive<?> filtered = filterArchive(weaving.archive, includes, excludes);
 
+                Archive<?> filtered = filterArchive(weaving.archive, includes, excludes);
                 returns.add(new Pair<>(weaving, filtered));
             }
         }
@@ -326,7 +261,6 @@ public class AspectJConfigExtractor implements ApplicationArchiveProcessor
                 return parseConfiguration(json);
             }
         }
-
         return null;
     }
 
@@ -348,6 +282,23 @@ public class AspectJConfigExtractor implements ApplicationArchiveProcessor
         return model;
     }
 
+    private String transformToMatchAnyParentDirectory(String pattern)
+    {
+        if (!pattern.startsWith("/") && !pattern.startsWith("*"))
+        {
+            pattern = "**/" + pattern;
+        }
+        return pattern;
+    }
+
+    private String transformToMatchAnyChildDirectory(String pattern)
+    {
+        if (!pattern.endsWith("/") && !pattern.endsWith("*"))
+        {
+            pattern = pattern + "/**";
+        }
+        return pattern;
+    }
 
     private void exportArchive(Archive<?> archive, StringBuilder basePath)
     {
@@ -362,7 +313,6 @@ public class AspectJConfigExtractor implements ApplicationArchiveProcessor
 
         basePath.append(archive.getName());
         basePath.append("/");
-
 
         archive.as(ExplodedExporter.class).exportExploded(dir);
 
