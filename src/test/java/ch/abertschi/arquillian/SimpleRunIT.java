@@ -35,11 +35,9 @@ public class SimpleRunIT
         String json = AspectJDescriptor
                 .create()
                 .weave("webarchive.war")
-                .include("/WEB-INF/classes")
-                .exclude("/WEB-INF/classes/ch/abertschi/debug")
-                .withAspects("ch.abertschi:mytest")
-                .include("/ch/abertschi")
-                .exclude("**test")
+
+                .withAspects("webarchive.war")
+                //.exclude("/META**")
                 .addAspects()
                 .and()
                 .exportAsString();

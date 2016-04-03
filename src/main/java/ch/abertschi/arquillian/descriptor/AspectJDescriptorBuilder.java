@@ -1,7 +1,5 @@
 package ch.abertschi.arquillian.descriptor;
 
-import org.jboss.shrinkwrap.api.asset.Asset;
-
 /**
  * Created by abertschi on 07/02/16.
  */
@@ -38,6 +36,7 @@ public interface AspectjDescriptorBuilder
     interface AspectLibraryOption extends LibraryFilterOption<AspectLibraryOption>
     {
         AspectLibraryOption and(String name);
+
         WeavingLibraryOption addAspects();
     }
 

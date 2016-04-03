@@ -2,6 +2,7 @@ package ch.abertschi.arquillian.descriptor;
 
 import ch.abertschi.arquillian.descriptor.model.*;
 import ch.abertschi.arquillian.descriptor.model.Compiler;
+import com.github.underscore.$;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonMethod;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -17,41 +18,18 @@ import java.util.List;
  */
 public class AspectJDescriptor implements AspectjDescriptorBuilder
 {
-
     private List<WeavingLibraryBuilder> mWeavingBuilders = new ArrayList<>();
+
     private CompilerOptionBuilder mCompilerBuilder = new CompilerOptionBuilder(this);
+
+    AspectJDescriptor()
+    {
+    }
 
     public static AspectjDescriptorBuilder create()
     {
         return new AspectJDescriptor();
     }
-
-    public static void main(String[] args)
-    {
-        String json = AspectJDescriptor
-                .create()
-                .weave("webarchive.war")
-                .include("/WEB-INF/classes")
-                .exclude("/WEB-INF/classes/ch/abertschi/debug")
-                .withAspects("ch.abertschi:mytest")
-                .and("ch.abertschi:mytest2")
-                .addAspects()
-                .and()
-                .weave("webarchive.war/**/jar-to-weave-*.jar")
-                .include("/ch/abertschi")
-                .exclude("**test")
-                .withAspects("ch.abertschi:mytest")
-                .exclude(CompilerOption.class)
-                .addAspects()
-                .and()
-                .compiler()
-                .verbose()
-                .and()
-                .exportAsString();
-
-        System.out.println(json);
-    }
-
 
     @Override
     public CompilerOption compiler()
@@ -70,19 +48,14 @@ public class AspectJDescriptor implements AspectjDescriptorBuilder
     @Override
     public String exportAsString()
     {
-        ObjectMapper mapper;
-        mapper = new ObjectMapper().setVisibility(JsonMethod.FIELD, JsonAutoDetect.Visibility.ANY);
-        AspectJDescriptorModel model = new AspectJDescriptorModel();
-        model.setCompiler(mCompilerBuilder.build());
-        List<WeavingLibrary> weavingLibs = new ArrayList<>();
-        for (WeavingLibraryBuilder builder : mWeavingBuilders)
-        {
-            weavingLibs.add(builder.build());
-        }
-        model.setWeaving(weavingLibs);
+        AspectJDescriptorModel model = new AspectJDescriptorModel()
+                .setCompiler(mCompilerBuilder.build())
+                .setWeaving($.map(mWeavingBuilders, builder -> builder.build()));
         try
         {
-            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(model);
+            return new ObjectMapper()
+                    .setVisibility(JsonMethod.FIELD, JsonAutoDetect.Visibility.ANY)
+                    .writerWithDefaultPrettyPrinter().writeValueAsString(model);
         }
         catch (IOException e)
         {

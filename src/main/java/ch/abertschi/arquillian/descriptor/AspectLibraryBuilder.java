@@ -31,9 +31,8 @@ public class AspectLibraryBuilder extends AbstractLibraryFilterBuilder<AspectLib
 
     public AspectLibrary build()
     {
-        AspectLibrary lib = new AspectLibrary(super.getName());
-        lib.setIncludes(super.getIncludes());
-        lib.setExcludes(super.getExcludes());
-        return lib;
+        return new AspectLibrary(super.getName())
+                .setIncludes(super.getIncludes())
+                .setExcludes(super.getExcludes());
     }
 }

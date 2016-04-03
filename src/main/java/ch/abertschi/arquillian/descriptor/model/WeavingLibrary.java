@@ -13,6 +13,10 @@ public class WeavingLibrary
     private List<String> excludes = new ArrayList<>();
     private List<AspectLibrary> aspects = new ArrayList<>();
 
+    WeavingLibrary()
+    {
+    }
+
     public WeavingLibrary(String name)
     {
         this.name = name;

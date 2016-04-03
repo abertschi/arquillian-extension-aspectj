@@ -12,6 +12,10 @@ public class AspectLibrary
     private List<String> includes = new ArrayList<>();
     private List<String> excludes = new ArrayList<>();
 
+    AspectLibrary()
+    {
+    }
+
     public AspectLibrary(String name)
     {
         this.name = name;

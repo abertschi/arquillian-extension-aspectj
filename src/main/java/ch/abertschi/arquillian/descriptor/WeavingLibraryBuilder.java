@@ -1,7 +1,7 @@
 package ch.abertschi.arquillian.descriptor;
 
-import ch.abertschi.arquillian.descriptor.model.AspectLibrary;
 import ch.abertschi.arquillian.descriptor.model.WeavingLibrary;
+import com.github.underscore.$;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,6 +14,7 @@ import static ch.abertschi.arquillian.descriptor.AspectjDescriptorBuilder.*;
 public class WeavingLibraryBuilder extends AbstractLibraryFilterBuilder<WeavingLibraryOption> implements WeavingLibraryOption
 {
     private AspectjDescriptorBuilder mRootBuilder;
+
     private List<AspectLibraryBuilder> mAspectBuilders = new ArrayList<>();
 
     public WeavingLibraryBuilder(AspectjDescriptorBuilder rootBuilder, String libraryName)
@@ -38,14 +39,9 @@ public class WeavingLibraryBuilder extends AbstractLibraryFilterBuilder<WeavingL
 
     public WeavingLibrary build()
     {
-        WeavingLibrary lib = new WeavingLibrary(super.getName());
-        lib.setExcludes(super.getExcludes());
-        lib.setIncludes(super.getIncludes());
-        lib.setAspects(new ArrayList<AspectLibrary>());
-        for (AspectLibraryBuilder aspectBuilder : mAspectBuilders)
-        {
-            lib.getAspects().add(aspectBuilder.build());
-        }
-        return lib;
+        return new WeavingLibrary(super.getName())
+                .setExcludes(super.getExcludes())
+                .setIncludes(super.getIncludes())
+                .setAspects($.map(mAspectBuilders,builder->builder.build()));
     }
 }

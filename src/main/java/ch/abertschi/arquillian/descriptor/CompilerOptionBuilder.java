@@ -1,11 +1,11 @@
 package ch.abertschi.arquillian.descriptor;
 
-import ch.abertschi.arquillian.descriptor.model.*;
 import ch.abertschi.arquillian.descriptor.model.Compiler;
 
 public class CompilerOptionBuilder implements AspectjDescriptorBuilder.CompilerOption
 {
     private AspectjDescriptorBuilder mRootBuilder;
+
     private boolean mIsVerbose = false;
 
     public CompilerOptionBuilder(AspectjDescriptorBuilder rootBuilder)
@@ -33,8 +33,6 @@ public class CompilerOptionBuilder implements AspectjDescriptorBuilder.CompilerO
 
     public ch.abertschi.arquillian.descriptor.model.Compiler build()
     {
-        Compiler c = new Compiler();
-        c.setVerbose(mIsVerbose);
-        return c;
+        return new Compiler().setVerbose(mIsVerbose);
     }
 }

@@ -1,8 +1,7 @@
 package ch.abertschi.arquillian.descriptor;
 
+import ch.abertschi.arquillian.util.MatcherUtils;
 import ch.abertschi.arquillian.descriptor.AspectjDescriptorBuilder.LibraryFilterOption;
-import ch.abertschi.arquillian.descriptor.model.AspectJDescriptorModel;
-import ch.abertschi.arquillian.descriptor.model.AspectLibrary;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,10 +9,12 @@ import java.util.List;
 /**
  * Created by abertschi on 29/03/16.
  */
-public abstract class AbstractLibraryFilterBuilder<T extends LibraryFilterOption<T>> implements LibraryFilterOption<T>
+abstract class AbstractLibraryFilterBuilder<T extends LibraryFilterOption<T>> implements LibraryFilterOption<T>
 {
     private String mName;
+
     private List<String> mIncludes = new ArrayList<>();
+
     private List<String> mExcludes = new ArrayList<>();
 
     public AbstractLibraryFilterBuilder(String libraryName)
@@ -75,7 +76,7 @@ public abstract class AbstractLibraryFilterBuilder<T extends LibraryFilterOption
 
     protected String getClassPattern(Class<?> type)
     {
-        return this.prefixToMatchAllParentDirectory(this.suffixToMatchAnyExtension(this.packageStructureToFileStructure(type.getCanonicalName())));
+        return this.matchAnyParent(this.suffixToMatchAnyExtension(this.packageStructureToFileStructure(type.getCanonicalName())));
     }
 
     protected String packageStructureToFileStructure(String packageStructure)
@@ -85,28 +86,23 @@ public abstract class AbstractLibraryFilterBuilder<T extends LibraryFilterOption
 
     protected String getPackagePattern(Package p)
     {
-        return this.prefixToMatchAllParentDirectory(this.suffixToMatchAllChildDirectory(this.packageStructureToFileStructure(p.getName())));
+        return this.matchAnyParent(this.matchAnyChild(this.packageStructureToFileStructure(p.getName())));
     }
 
-    protected String prefixToMatchAllParentDirectory(String name)
+    protected String matchAnyParent(String name)
     {
-        if (!name.startsWith("*") || !name.startsWith("/")) {
-            name = "**/" + name;
-        }
-        return name;
+        return MatcherUtils.transformToMatchAnyParent(name);
     }
 
-    protected String suffixToMatchAllChildDirectory(String name)
+    protected String matchAnyChild(String name)
     {
-        if (!name.endsWith("*") || !name.endsWith("/")) {
-            name = name + "/**";
-        }
-        return name;
+        return MatcherUtils.transformToMatchAnyChild(name);
     }
 
     protected String suffixToMatchAnyExtension(String name)
     {
-        if (!name.endsWith("*") || !name.endsWith("/")) {
+        if (!name.endsWith("*") || !name.endsWith("/"))
+        {
             name = name + "*";
         }
         return name;
