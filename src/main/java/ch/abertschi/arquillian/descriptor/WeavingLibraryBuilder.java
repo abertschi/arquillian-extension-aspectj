@@ -24,6 +24,12 @@ public class WeavingLibraryBuilder extends AbstractLibraryFilterBuilder<WeavingL
     }
 
     @Override
+    public AspectLibraryOption withAspectsInWeavingLibrary()
+    {
+        return withAspects(super.getName());
+    }
+
+    @Override
     public AspectLibraryOption withAspects(String name)
     {
         AspectLibraryBuilder builder = new AspectLibraryBuilder(this, name);

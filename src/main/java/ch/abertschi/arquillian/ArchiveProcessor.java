@@ -126,6 +126,7 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
             try
             {
                 json = IOUtils.toString(configNode.getAsset().openStream(), "UTF-8");
+                System.out.println(json);
             }
             catch (IOException e)
             {

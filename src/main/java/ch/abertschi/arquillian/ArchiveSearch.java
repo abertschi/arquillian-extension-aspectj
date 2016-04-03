@@ -8,6 +8,7 @@ import org.jboss.shrinkwrap.api.importer.ZipImporter;
 import org.springframework.util.AntPathMatcher;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -17,6 +18,8 @@ import java.util.Map;
 public class ArchiveSearch
 {
     private static final AntPathMatcher MATCHER = new AntPathMatcher();
+
+    private static List<String> SUPPORTED_NESTED_CONTAINERS = Arrays.asList(".jar", ".war");
 
     public static List<ArchiveSearchResult> searchInArchive(Archive<?> archive, String pattern)
     {
@@ -56,7 +59,7 @@ public class ArchiveSearch
                 returns.add(result);
             }
 
-            if (path.endsWith(".jar") || path.endsWith(".war"))
+            if (isNestedContainer(path))
             {
                 Archive<?> subArchive = convertToArchive(entry.getValue().getAsset());
 
@@ -139,7 +142,7 @@ public class ArchiveSearch
             }
             else if (key.contains(path))
             {
-                if (path.endsWith(".jar") || path.endsWith(".war"))
+                if (isNestedContainer(path))
                 {
                     Archive<?> subArchive = convertToArchive(entry.getValue().getAsset());
                     Archive<?> subReplace = _replaceArchive(subArchive, key, path, replace);
@@ -171,6 +174,11 @@ public class ArchiveSearch
         return matches;
     }
 
+    private static boolean isNestedContainer(String name)
+    {
+        return !$.isEmpty($.filter(SUPPORTED_NESTED_CONTAINERS, ext -> name.endsWith(ext)));
+    }
+
     private static GenericArchive convertToArchive(Asset asset)
     {
         return ShrinkWrap.create(ZipImporter.class)
@@ -180,7 +188,9 @@ public class ArchiveSearch
     public static class ArchiveSearchResult
     {
         private Archive<?> parentArchive;
+
         private String path;
+
         private Archive<?> archive;
 
         public Archive<?> getArchive()

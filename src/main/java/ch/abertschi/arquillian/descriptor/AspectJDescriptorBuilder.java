@@ -28,6 +28,9 @@ public interface AspectjDescriptorBuilder
 
     interface WeavingLibraryOption extends LibraryFilterOption<WeavingLibraryOption>
     {
+
+        AspectLibraryOption withAspectsInWeavingLibrary();
+
         AspectLibraryOption withAspects(String name);
 
         AspectjDescriptorBuilder and();

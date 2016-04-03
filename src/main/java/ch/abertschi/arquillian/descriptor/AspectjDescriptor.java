@@ -1,13 +1,10 @@
 package ch.abertschi.arquillian.descriptor;
 
 import ch.abertschi.arquillian.descriptor.model.*;
-import ch.abertschi.arquillian.descriptor.model.Compiler;
 import com.github.underscore.$;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonMethod;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.jboss.shrinkwrap.api.asset.Asset;
-import org.jboss.shrinkwrap.api.asset.StringAsset;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -16,19 +13,19 @@ import java.util.List;
 /**
  * Created by abertschi on 07/02/16.
  */
-public class AspectJDescriptor implements AspectjDescriptorBuilder
+public class AspectjDescriptor implements AspectjDescriptorBuilder
 {
     private List<WeavingLibraryBuilder> mWeavingBuilders = new ArrayList<>();
 
     private CompilerOptionBuilder mCompilerBuilder = new CompilerOptionBuilder(this);
 
-    AspectJDescriptor()
+    AspectjDescriptor()
     {
     }
 
     public static AspectjDescriptorBuilder create()
     {
-        return new AspectJDescriptor();
+        return new AspectjDescriptor();
     }
 
     @Override
