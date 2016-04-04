@@ -2,3 +2,5 @@
 arquillian-extension-aspectj.iml
 target
 example.iml
+weaved
+weaved.jar

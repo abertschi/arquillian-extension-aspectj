@@ -55,9 +55,6 @@ public static Archive<?> deploy()
        
     return ear;
 }
-    
-// more options here https://eclipse.org/aspectj/doc/next/devguide/ltw-configuration.html#configuring-load-time-weaving-with-aopxml-files
-// more options here http://www.mojohaus.org/aspectj-maven-plugin/compile-mojo.html
 
 ```
 
@@ -92,3 +89,12 @@ public static Archive<?> deploy()
 }
 ```
 
+
+## Implementation resources
+- shrinkwrap-resolver-properties:
+  - [all properties](https://books.google.ch/books?id=3S0QAwAAQBAJ&pg=PA35&lpg=PA35&dq=org.apache.maven.user-settings&source=bl&ots=iCQHdu0Y5x&sig=8H4MDbGF3tHN7MtvuzU0W2TYELM&hl=en&sa=X&ved=0ahUKEwi91auB1PLLAhVE_iwKHUZ9A64Q6AEIUzAJ#v=onepage&q=org.apache.maven.user-settings&f=false)
+  - [behind proxy](http://stackoverflow.com/questions/6291146/arquillian-shrinkwrap-mavendependencyresolver-behind-proxy)
+
+- aj options:
+  - more options here https://eclipse.org/aspectj/doc/next/devguide/ltw-configuration.html#configuring-load-time-weaving-with-aopxml-files
+  - more options here http://www.mojohaus.org/aspectj-maven-plugin/compile-mojo.html
