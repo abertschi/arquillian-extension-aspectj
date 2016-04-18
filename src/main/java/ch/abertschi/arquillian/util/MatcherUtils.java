@@ -14,7 +14,27 @@ public class MatcherUtils
     {
         if (!pattern.startsWith("/") && !pattern.startsWith("*"))
         {
-            pattern = "**/" + pattern;
+            // **/test matches com/test but not /com/test
+            pattern = "/**/*" + pattern;
+        }
+        return pattern;
+    }
+
+    public static String transformToMatchAnyPrefixInSameDirectoryAndAnyParent(String pattern)
+    {
+        if (!pattern.startsWith("/") && !pattern.startsWith("*"))
+        {
+            // **/test matches com/test but not /com/test
+            pattern = "**/*" + pattern;
+        }
+        return pattern;
+    }
+
+    public static String transformToMatchAnySuffixInSameDirectory(String pattern)
+    {
+        if (!pattern.endsWith("/") && !pattern.endsWith("*"))
+        {
+            pattern = pattern + "*";
         }
         return pattern;
     }
@@ -23,7 +43,7 @@ public class MatcherUtils
     {
         if (!pattern.endsWith("/") && !pattern.endsWith("*"))
         {
-            pattern = pattern + "/**";
+            pattern = pattern + "*/**";
         }
         return pattern;
     }

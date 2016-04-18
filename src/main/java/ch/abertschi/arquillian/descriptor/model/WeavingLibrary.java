@@ -8,13 +8,15 @@ import java.util.List;
  */
 public class WeavingLibrary
 {
-    private String name;
+    private String name = "";
+    private boolean weaveEverything = false;
     private List<String> includes = new ArrayList<>();
     private List<String> excludes = new ArrayList<>();
     private List<AspectLibrary> aspects = new ArrayList<>();
 
-    WeavingLibrary()
+    public WeavingLibrary()
     {
+        this.weaveEverything = true;
     }
 
     public WeavingLibrary(String name)
@@ -63,6 +65,17 @@ public class WeavingLibrary
     public WeavingLibrary setName(String name)
     {
         this.name = name;
+        return this;
+    }
+
+    public boolean isWeaveEverything()
+    {
+        return weaveEverything;
+    }
+
+    public WeavingLibrary setWeaveEverything(boolean weaveEverything)
+    {
+        this.weaveEverything = weaveEverything;
         return this;
     }
 }

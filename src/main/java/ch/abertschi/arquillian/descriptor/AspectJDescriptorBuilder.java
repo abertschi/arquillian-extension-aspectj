@@ -1,53 +1,41 @@
 package ch.abertschi.arquillian.descriptor;
 
+import java.util.List;
+
 /**
- * Created by abertschi on 07/02/16.
+ * Created by abertschi on 15/04/16.
  */
 public interface AspectjDescriptorBuilder
 {
-    CompilerOption compiler();
+    WeavingLibraryOptionInitial weave(String name);
 
-    WeavingLibraryOption weave(String name);
+    WeavingLibraryOptionInitial weave();
 
     String exportAsString();
 
-    interface LibraryFilterOption<T extends LibraryFilterOption<T>>
+    interface WeavingLibraryOptionInitial extends WeavingLibraryOption, FilterOption<WeavingLibraryOptionInitial>
     {
-        T include(String pattern);
-
-        T include(Package packageObject);
-
-        T include(Class<?>... types);
-
-        T exclude(String pattern);
-
-        T exclude(Package packageObject);
-
-        T exclude(Class<?>... types);
     }
 
-    interface WeavingLibraryOption extends LibraryFilterOption<WeavingLibraryOption>
+    interface WeavingLibraryOption
     {
+        AspectLibraryOption aspectLibrary(String name);
 
-        AspectLibraryOption withAspectsInWeavingLibrary();
-
-        AspectLibraryOption withAspects(String name);
-
-        AspectjDescriptorBuilder and();
+        AspectjDescriptorBuilder addWeaveDependency();
     }
 
-    interface AspectLibraryOption extends LibraryFilterOption<AspectLibraryOption>
+    interface AspectLibraryOption extends FilterOption<AspectLibraryOption>
     {
-        AspectLibraryOption and(String name);
-
-        WeavingLibraryOption addAspects();
+        WeavingLibraryOption addAspectLibrary();
     }
 
-    interface CompilerOption
+    interface FilterOption<RETURN_CLASS>
     {
-        CompilerOption verbose();
 
-        AspectjDescriptorBuilder and();
+        RETURN_CLASS filter(Filter... filters);
+
+        RETURN_CLASS filter(List<Filter> filters);
+
+        RETURN_CLASS filter(Filter.FilterType type, String... patterns);
     }
 }
-

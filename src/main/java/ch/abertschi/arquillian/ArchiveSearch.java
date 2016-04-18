@@ -17,16 +17,28 @@ import java.util.Map;
  */
 public class ArchiveSearch
 {
+
+    /*
+     * BasicPath always starts with /
+     *  - relevant for filtering
+     *
+     *  current pattern: **\/ does not include leading /
+     *
+     * if only JavaArchive deployed, archive is identified by name
+     *
+     */
     private static final AntPathMatcher MATCHER = new AntPathMatcher();
 
     private static List<String> SUPPORTED_NESTED_CONTAINERS = Arrays.asList(".jar", ".war");
 
     public static List<ArchiveSearchResult> searchInArchive(Archive<?> archive, String pattern)
     {
-        String name = archive.getName();
+        String name = "/" + archive.getName();
         List<ArchiveSearchResult> returns = _searchInArchive(archive, name, pattern);
 
-        if (MATCHER.match(pattern, name))
+        boolean matched = MATCHER.match(pattern, name);
+        System.out.println(String.format("matching %s with %s: %s", name, pattern, matched));
+        if (matched)
         {
             System.out.println("matched!");
             ArchiveSearchResult result = new ArchiveSearchResult()
@@ -47,7 +59,9 @@ public class ArchiveSearch
             String path = basepath + entry.getKey().get().toString();
             System.out.println("comparing " + pattern + " with " + path);
 
-            if (MATCHER.match(pattern, path))
+            boolean matched = MATCHER.match(pattern, path);
+            System.out.println(String.format("matching %s with %s: %s", path, pattern, matched));
+            if (matched)
             {
                 Archive<?> subArchive = convertToArchive(entry.getValue().getAsset());
                 System.out.println("matched!");
@@ -75,26 +89,27 @@ public class ArchiveSearch
 
     public static Archive<?> filterArchive(Archive<?> archive, List<String> includes, List<String> excludes)
     {
-        boolean hasIncludeFilter = false;
-        boolean hasExcludeFilter = false;
-        if (!$.isEmpty(includes))
-        {
-            hasIncludeFilter = true;
-        }
-        if (!$.isEmpty(excludes))
-        {
-            hasExcludeFilter = true;
-        }
+        boolean hasIncludeFilter = !$.isEmpty(includes) ? true: false;
+        boolean hasExcludeFilter = !$.isEmpty(excludes) ? true: false;
+
+
+        System.out.println("includes");
+        $.forEach(includes, s -> System.out.println(s));
+
+        System.out.println("excludes");
+        $.forEach(excludes, s -> System.out.println(s));
+
         Archive<?> filteredArchive = archive.shallowCopy();
         if (hasIncludeFilter || hasExcludeFilter)
         {
             for (Map.Entry<ArchivePath, Node> entry : archive.getContent().entrySet())
             {
-                boolean isFile = entry.getValue().getAsset() == null;
+                boolean isFile = entry.getValue().getAsset() != null;
                 if (isFile)
                 {
-                    if (hasIncludeFilter && !matchesPattern(entry.getKey().get(), includes)
-                            || hasExcludeFilter && matchesPattern(entry.getKey().get(), excludes))
+                    String asset = entry.getKey().get();
+                    if (hasIncludeFilter && !matchesPattern(asset, includes)
+                            || hasExcludeFilter && matchesPattern(asset, excludes))
                     {
                         System.out.println("Removing from " + archive.getName() + " " + entry.getKey());
                         filteredArchive.delete(entry.getKey());
@@ -107,14 +122,15 @@ public class ArchiveSearch
 
     public static Archive<?> replaceArchive(Archive<?> archive, String searchKey, Archive<?> replace)
     {
-        String basename = archive.getName();
+        Archive<?> source = archive.shallowCopy();
+        String basename = "/" + source.getName();
         if (searchKey.equals(basename))
         {
             return replace;
         }
         else
         {
-            Archive<?> replaced = _replaceArchive(archive, searchKey, basename, replace);
+            Archive<?> replaced = _replaceArchive(source, searchKey, basename, replace);
             if ($.isNull(replaced))
             {
                 String msg = String.format("No entry found with Node %s to replace in %s", searchKey, basename);
@@ -165,7 +181,9 @@ public class ArchiveSearch
         boolean matches = false;
         for (String pat : patterns)
         {
-            if (MATCHER.match(pat, path))
+            boolean matched = MATCHER.match(pat, path);
+            System.out.println(String.format("matching %s with %s: %s", path, pat, matched));
+            if (matched)
             {
                 matches = true;
                 break;

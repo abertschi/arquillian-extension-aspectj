@@ -6,30 +6,18 @@ import java.util.List;
 /**
  * Created by abertschi on 26/03/16.
  */
-public class AspectJDescriptorModel
+public class AspectjDescriptorModel
 {
     private List<WeavingLibrary> weaving = new ArrayList<>();
-    private Compiler compiler = new Compiler();
 
     public List<WeavingLibrary> getWeaving()
     {
         return weaving;
     }
 
-    public AspectJDescriptorModel setWeaving(List<WeavingLibrary> weaving)
+    public AspectjDescriptorModel setWeaving(List<WeavingLibrary> weaving)
     {
         this.weaving = weaving;
-        return this;
-    }
-
-    public Compiler getCompiler()
-    {
-        return compiler;
-    }
-
-    public AspectJDescriptorModel setCompiler(Compiler compiler)
-    {
-        this.compiler = compiler;
         return this;
     }
 }

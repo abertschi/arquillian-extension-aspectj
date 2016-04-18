@@ -1,6 +1,6 @@
 package ch.abertschi.arquillian.descriptor;
 
-import ch.abertschi.arquillian.descriptor.model.*;
+import ch.abertschi.arquillian.descriptor.model.AspectjDescriptorModel;
 import com.github.underscore.$;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonMethod;
@@ -15,9 +15,22 @@ import java.util.List;
  */
 public class AspectjDescriptor implements AspectjDescriptorBuilder
 {
-    private List<WeavingLibraryBuilder> mWeavingBuilders = new ArrayList<>();
+    public static void main(String[] args)
+    {
+        String json = AspectjDescriptor.create()
+                .weave()
+                .filter(Filters.exclude(AspectjDescriptorBuilder.class))
+                .filter(Filters.include("**/*test*"))
+                .aspectLibrary("test:test:1.1.1")
+                .filter(Filters.include(AspectjDescriptor.class.getPackage()))
+                .addAspectLibrary()
+                .addWeaveDependency()
+                .exportAsString();
 
-    private CompilerOptionBuilder mCompilerBuilder = new CompilerOptionBuilder(this);
+        System.out.println(json);
+    }
+
+    private List<WeavingBuilder> mWeavingBuilders = new ArrayList<>();
 
     AspectjDescriptor()
     {
@@ -29,15 +42,17 @@ public class AspectjDescriptor implements AspectjDescriptorBuilder
     }
 
     @Override
-    public CompilerOption compiler()
+    public WeavingLibraryOptionInitial weave(String name)
     {
-        return mCompilerBuilder;
+        WeavingBuilder builder = new WeavingBuilder(this, name);
+        mWeavingBuilders.add(builder);
+        return builder;
     }
 
     @Override
-    public WeavingLibraryOption weave(String name)
+    public WeavingLibraryOptionInitial weave()
     {
-        WeavingLibraryBuilder builder = new WeavingLibraryBuilder(this, name);
+        WeavingBuilder builder = new WeavingBuilder(this);
         mWeavingBuilders.add(builder);
         return builder;
     }
@@ -45,8 +60,7 @@ public class AspectjDescriptor implements AspectjDescriptorBuilder
     @Override
     public String exportAsString()
     {
-        AspectJDescriptorModel model = new AspectJDescriptorModel()
-                .setCompiler(mCompilerBuilder.build())
+        AspectjDescriptorModel model = new AspectjDescriptorModel()
                 .setWeaving($.map(mWeavingBuilders, builder -> builder.build()));
         try
         {
@@ -58,5 +72,6 @@ public class AspectjDescriptor implements AspectjDescriptorBuilder
         {
             throw new RuntimeException("Can not create json file", e);
         }
+
     }
 }

@@ -1,15 +1,27 @@
 package ch.abertschi.arquillian.domain;
 
-import javax.ejb.Stateless;
+import org.jboss.arquillian.core.api.annotation.Inject;
+
+import javax.annotation.PostConstruct;
+import javax.ejb.Singleton;
+import javax.ejb.Startup;
 
 /**
- * Created by abertschi on 25/03/16.
+ * Created by abertschi on 13/04/16.
  */
-@Stateless
+@Singleton
+@Startup
 public class DummyGreeter
 {
-    public String sayAspect()
-    {
-        return "aspect";
+    @Inject
+    Greeting greeting;
+
+    @PostConstruct
+    public void sayGreeting() {
+        System.out.println(greeting.greet());
+    }
+
+    public String getGreeting() {
+        return greeting.greet();
     }
 }

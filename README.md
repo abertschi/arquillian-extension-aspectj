@@ -21,6 +21,15 @@ Add your configuration file to *META-INF/aspectj.json* of your deployment.
 
 Generate a configuration file *aspectj.json* and add it as a manifest resource to your deployment.
 
+
+create().weave("webarchive.war")
+        .weave().filter(Filters.INCLUDE, Myclass.class)
+                .filter(Filters.EXCLUDE, "**/*test")
+                .withAspectLibrary("com.mypackage:mylib:1.1.1-SNAPSHOT")
+                .
+        .weave().filter().include().include().include().exclude().applyFilter()
+        .withAspectLibrary().filter()
+
 ```java
 
 @Deployment

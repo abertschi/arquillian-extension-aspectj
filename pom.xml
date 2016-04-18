@@ -162,6 +162,8 @@
                 <configuration>
                     <jvm>${JAVA_HOME_1_7}/bin/java</jvm>
                     <forkMode>once</forkMode>
+                    <trimStackTrace>false</trimStackTrace>
+                    <useFile>false</useFile>
                 </configuration>
             </plugin>
             <plugin>
@@ -202,6 +204,8 @@
                 <configuration>
                     <jvm>${JAVA_HOME_1_7}/bin/java</jvm>
                     <forkMode>once</forkMode>
+                    <trimStackTrace>false</trimStackTrace>
+                    <useFile>false</useFile>
                 </configuration>
             </plugin>
         </plugins>

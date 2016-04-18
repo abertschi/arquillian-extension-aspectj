@@ -1,12 +1,12 @@
 package ch.abertschi.arquillian;
 
-import ch.abertschi.arquillian.descriptor.model.AspectJDescriptorModel;
+import ch.abertschi.arquillian.descriptor.model.AspectjDescriptorModel;
 import ch.abertschi.arquillian.descriptor.model.AspectLibrary;
 import ch.abertschi.arquillian.descriptor.model.WeavingLibrary;
 import ch.abertschi.arquillian.util.MatcherUtils;
 import com.github.underscore.$;
 import org.apache.commons.io.IOUtils;
-import ch.abertschi.arquillian.util.ResolveUtil;
+import ch.abertschi.arquillian.util.ResolverUtil;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonMethod;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -14,7 +14,10 @@ import org.javatuples.Pair;
 import org.jboss.arquillian.container.test.spi.client.deployment.ApplicationArchiveProcessor;
 import org.jboss.arquillian.test.spi.TestClass;
 import org.jboss.shrinkwrap.api.*;
+import org.jboss.shrinkwrap.api.exporter.ZipExporter;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
@@ -28,7 +31,7 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
     @Override
     public void process(Archive<?> deployableArchive, TestClass testClass)
     {
-        AspectJDescriptorModel model = getConfigurationFromArchive(deployableArchive);
+        AspectjDescriptorModel model = getConfigurationFromArchive(deployableArchive);
         if (!$.isNull(model))
         {
             AjCompiler compiler = new AjCompiler();
@@ -40,26 +43,51 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
                 for (Pair<ArchiveSearch.ArchiveSearchResult, Archive> weave : weavings)
                 {
                     Archive<?> compiled = compiler.compileTimeWeave(weave.getValue1(), aspects);
+
+                    System.out.println("COMPILED:");
+                    $.forEach(compiled.getContent().keySet(), o -> System.out.println(o));
+
+                    compiled.as(ZipExporter.class).exportTo(new File(".", "compiled.jar"), true);
+
                     Archive<?> replace = weave.getValue0().getArchive().merge(compiled);
+                    //Archive<?> replace = mergeAndReplace(weave.getValue0().getArchive(), compiled);
+
+                    replace.as(ZipExporter.class).exportTo(new File(".", "replaced.jar"), true);
+
+
+                    System.out.println("merged:");
+                    $.forEach(replace.getContent().keySet(), o -> System.out.println(o));
 
                     // merge all aspect libraries into recompiled aspect so they are available for sure
-                    for (Archive<?> aspect : aspects)
+
+                    for (Archive<?> aspect : $.concat(compiler.getRuntimeLibraries()))
                     {
                         replace = replace.merge(aspect);
                     }
-                    deployableArchive = ArchiveSearch.replaceArchive(deployableArchive, weave.getValue0().getPath(), replace);
-                }
-                for (Archive<?> a : aspects)
-                {
-                    System.out.println("Filtered archive:");
-                    for (Map.Entry<ArchivePath, Node> entry : a.getContent().entrySet())
-                    {
-                        System.out.println(entry.getKey());
 
-                    }
+                    Archive<?> deployableReplaced =
+                            ArchiveSearch.replaceArchive(deployableArchive, weave.getValue0().getPath(), replace);
+
+                    deployableArchive.merge(deployableReplaced);
                 }
             }
         }
+    }
+
+    private Archive<?> mergeAndReplace(Archive<?> from, Archive<?> into)
+    {
+        for (Map.Entry<ArchivePath, Node> fromEntry : from.getContent().entrySet())
+        {
+            if (into.contains(fromEntry.getKey()))
+            {
+                if (fromEntry.getValue().getAsset() != null)
+                {
+                    System.out.println("delete " + fromEntry.getKey());
+                    into.delete(fromEntry.getKey());
+                }
+            }
+        }
+        return into.merge(from);
     }
 
     private List<Archive<?>> getAspectLibraries(Archive<?> sourceArchive, List<AspectLibrary> aspectDescriptors)
@@ -70,7 +98,8 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
             List<Archive<?>> aspects;
             if (aspectDescriptor.getName().contains(":")) // G:A:V
             {
-                aspects = ResolveUtil.get().resolveWithMaven(aspectDescriptor.getName());
+                aspects = (List<Archive<?>>) ((Object) ResolverUtil
+                        .get().resolve(aspectDescriptor.getName()).withTransitivity().asList(JavaArchive.class));
             }
             else
             {
@@ -94,8 +123,16 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
 
     private List<Pair<ArchiveSearch.ArchiveSearchResult, Archive>> getWeavingLibraries(Archive<?> sourceArchive, WeavingLibrary weavingDescriptor)
     {
+        String pattern;
+        if (weavingDescriptor.isWeaveEverything())
+        {
+            pattern = sourceArchive.getName();
+        }
+        else
+        {
+            pattern = MatcherUtils.transformToMatchAnyParent(weavingDescriptor.getName());
+        }
         List<Pair<ArchiveSearch.ArchiveSearchResult, Archive>> returns = new ArrayList<>();
-        String pattern = MatcherUtils.transformToMatchAnyParent(weavingDescriptor.getName());
         List<ArchiveSearch.ArchiveSearchResult> weavings = ArchiveSearch.searchInArchive(sourceArchive, pattern);
 
         if (!$.isEmpty(weavings))
@@ -117,7 +154,7 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
         return Collections.unmodifiableList(returns);
     }
 
-    private AspectJDescriptorModel getConfigurationFromArchive(Archive<?> archive)
+    private AspectjDescriptorModel getConfigurationFromArchive(Archive<?> archive)
     {
         Node configNode = archive.get(CONFIG_FILE);
         if (configNode != null)
@@ -140,15 +177,15 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
         return null;
     }
 
-    private AspectJDescriptorModel parseConfiguration(String json)
+    private AspectjDescriptorModel parseConfiguration(String json)
     {
-        AspectJDescriptorModel model = null;
+        AspectjDescriptorModel model = null;
         if (json != null)
         {
             ObjectMapper mapper = new ObjectMapper().setVisibility(JsonMethod.FIELD, JsonAutoDetect.Visibility.ANY);
             try
             {
-                model = mapper.readValue(json, AspectJDescriptorModel.class);
+                model = mapper.readValue(json, AspectjDescriptorModel.class);
             }
             catch (IOException e)
             {

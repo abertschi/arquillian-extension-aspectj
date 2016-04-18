@@ -3,7 +3,6 @@ package ch.abertschi.arquillian;
 import ch.abertschi.arquillian.descriptor.AspectjDescriptor;
 import ch.abertschi.arquillian.domain.DummyGreeter;
 import junit.framework.Assert;
-import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.jboss.arquillian.container.test.api.Deployment;
@@ -23,39 +22,29 @@ import org.junit.runner.RunWith;
  */
 
 @RunWith(Arquillian.class)
-public class SimpleRunIT
+public class EarDeploymentIT
 {
 
     @Deployment
     public static Archive<?> deploy()
     {
-
-        EnterpriseArchive ear = ShrinkWrap.create(EnterpriseArchive.class, "my-ear.ear");
-
-        WebArchive war = ShrinkWrap.create(WebArchive.class, "webarchive.war")
-                .addClass(DummyGreeter.class)
-                .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml");
-
         String json = AspectjDescriptor
                 .create()
-                .weave("webarchive.war")
-
-                .withAspects("webarchive.war")
-                        //.exclude("/META**")
-                .addAspects()
-                .and()
+                .weave("mywar.war")
+                .addWeaveDependency()
                 .exportAsString();
 
-        System.out.println(json);
-//
-        JavaArchive jar = ShrinkWrap.create(JavaArchive.class, "mytest.jar")
-                .addPackage(SimpleRunIT.class.getPackage());
+        EnterpriseArchive ear = ShrinkWrap.create(EnterpriseArchive.class, "myear.ear");
+
+        WebArchive war = ShrinkWrap.create(WebArchive.class, "mywar.war")
+                .addPackages(true, DummyGreeter.class.getPackage())
+                .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml");
+
+        JavaArchive jar = ShrinkWrap.create(JavaArchive.class, "mytests.jar")
+                .addPackage(JarDeploymentIT.class.getPackage());
 
         war.addAsLibraries(jar);
-
-
         ear.addAsModule(war);
-        ear.addAsLibraries(jar);
         ear.addAsManifestResource(new StringAsset(json), "aspectj.json");
 
         return ear;
@@ -65,15 +54,5 @@ public class SimpleRunIT
     public void simpleRun()
     {
         Assert.assertTrue(true);
-    }
-
-    @Aspect
-    private static class DummyAspect
-    {
-        @Around("call(* *..DummyGreeter*..(..))")
-        public Object sayArquillian()
-        {
-            return "arquillian!";
-        }
     }
 }
