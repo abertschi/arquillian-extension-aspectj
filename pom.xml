@@ -4,6 +4,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <parent>
+        <groupId>ch.abertschi</groupId>
+        <artifactId>abertschi-oss-parent</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+
     <groupId>ch.abertschi.arquillian</groupId>
     <artifactId>arquillian-extension-aspectj</artifactId>
     <version>0.0.1-SNAPSHOT</version>
@@ -13,6 +19,28 @@
         <JAVA_HOME_1_7>NOT SET!</JAVA_HOME_1_7>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>abertschi.snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>abertschi.releases</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
 
     <dependencyManagement>
         <dependencies>
@@ -130,6 +158,12 @@
             <version>1.8.9</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.jboss.spec.javax.ejb</groupId>
+            <artifactId>jboss-ejb-api_3.1_spec</artifactId>
+            <version>1.0.2.Final</version>
+            <scope>test</scope>
+        </dependency>
 
         <dependency>
             <groupId>org.jboss.shrinkwrap.resolver</groupId>
@@ -141,11 +175,12 @@
             <groupId>org.jboss.shrinkwrap.resolver</groupId>
             <artifactId>shrinkwrap-resolver-api-maven</artifactId>
         </dependency>
-
     </dependencies>
 
     <build>
+
         <defaultGoal>install</defaultGoal>
+
         <plugins>
             <plugin>
                 <groupId>net.orfjackal.retrolambda</groupId>
@@ -176,31 +211,10 @@
                     <forkMode>once</forkMode>
                     <trimStackTrace>false</trimStackTrace>
                     <useFile>false</useFile>
+                    <systemPropertyVariables>
+                        <JAVA_HOME_1_7>${JAVA_HOME_1_7}</JAVA_HOME_1_7>
+                    </systemPropertyVariables>
                 </configuration>
-            </plugin>
-            <plugin>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>3.0.0</version>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>2.10.3</version>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
@@ -218,6 +232,9 @@
                     <forkMode>once</forkMode>
                     <trimStackTrace>false</trimStackTrace>
                     <useFile>false</useFile>
+                    <systemPropertyVariables>
+                        <JAVA_HOME_1_7>${JAVA_HOME_1_7}</JAVA_HOME_1_7>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
         </plugins>
