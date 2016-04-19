@@ -4,3 +4,5 @@ target
 example.iml
 weaved
 weaved.jar
+compiled.jar
+replaced.jar
