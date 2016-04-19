@@ -5,6 +5,8 @@ import com.github.underscore.$;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonMethod;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -17,18 +19,18 @@ public class AspectjDescriptor implements AspectjDescriptorBuilder
 {
     public static void main(String[] args)
     {
-        String json = AspectjDescriptor.create()
+        String json = AspectjDescriptor
+                .create()
                 .weave()
                 .filter(Filters.exclude(AspectjDescriptorBuilder.class))
                 .filter(Filters.include("**/*test*"))
-                .aspectLibrary("test:test:1.1.1")
-                .filter(Filters.include(AspectjDescriptor.class.getPackage()))
-                .addAspectLibrary()
                 .addWeaveDependency()
                 .exportAsString();
 
         System.out.println(json);
     }
+
+    private static final Logger LOG = LoggerFactory.getLogger(AspectjDescriptor.class);
 
     private List<WeavingBuilder> mWeavingBuilders = new ArrayList<>();
 
@@ -64,9 +66,11 @@ public class AspectjDescriptor implements AspectjDescriptorBuilder
                 .setWeaving($.map(mWeavingBuilders, builder -> builder.build()));
         try
         {
-            return new ObjectMapper()
+            String json = new ObjectMapper()
                     .setVisibility(JsonMethod.FIELD, JsonAutoDetect.Visibility.ANY)
                     .writerWithDefaultPrettyPrinter().writeValueAsString(model);
+            LOG.debug("Generating aspectj json \n" + json);
+            return json;
         }
         catch (IOException e)
         {

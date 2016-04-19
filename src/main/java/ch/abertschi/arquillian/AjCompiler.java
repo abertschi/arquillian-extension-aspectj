@@ -10,6 +10,8 @@ import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.importer.ZipImporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,28 +24,25 @@ import java.util.List;
  */
 public class AjCompiler
 {
+    private static final Logger LOG = LoggerFactory.getLogger(AjCompiler.class);
+
     private static final String AJRT = "org.aspectj:aspectjrt:1.8.9";
 
     public AjCompiler()
     {
-
     }
 
     public List<Archive<?>> getRuntimeLibraries()
     {
-        return (List<Archive<?>>)((Object) ResolverUtil.get().resolve(AJRT).withTransitivity().asList(JavaArchive.class));
+        return (List<Archive<?>>) ((Object) ResolverUtil.get().resolve(AJRT).withTransitivity().asList(JavaArchive.class));
     }
+
     public Archive<?> compileTimeWeave(List<Archive<?>> weavingLibraries, List<Archive<?>> aspectLibraries)
     {
-
-        System.out.println("weaving entries:");
-        $.forEach(weavingLibraries, archive -> $.forEach(archive.getContent().keySet(), archivePath -> System.out.println(archivePath)));
-
-        System.out.println("aspectj entries:");
-        $.forEach(aspectLibraries, archive -> $.forEach(archive.getContent().keySet(), archivePath -> System.out.println(archivePath)));
+        $.forEach(weavingLibraries, archive -> $.forEach(archive.getContent().keySet(), archivePath -> LOG.debug("Weaving node " + archivePath)));
+        $.forEach(aspectLibraries, archive -> $.forEach(archive.getContent().keySet(), archivePath -> LOG.debug("Aspect node " + archivePath)));
 
         List<String> options = new ArrayList<>();
-
         File base = new File(new File("."), "./target/aj");
         base.mkdirs();
         options.add("-d");
@@ -69,14 +68,12 @@ public class AjCompiler
         options.add("-aspectpath");
         options.add(aspects);
 
-        System.out.println("Calling aj compiler with " + $.join(options, " "));
-
+        LOG.debug("Calling aj compiler with " + $.join(options, " "));
         Main compiler = new Main();
         MessageHandler m = new MessageHandler();
         compiler.run(options.toArray(new String[options.size()]), m);
         IMessage[] ms = m.getMessages(null, true);
-        System.out.println("messages: ");
-        $.forEach(Arrays.asList(ms), o -> System.out.println(o));
+        $.forEach(Arrays.asList(ms), o -> LOG.debug(o.getMessage()));
 
         return importFromZip(weavedFile);
     }

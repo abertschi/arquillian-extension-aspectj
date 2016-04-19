@@ -11,6 +11,12 @@ import java.util.List;
  */
 public class Filters
 {
+
+    // Matching rules:
+    // -  no / at root
+    // - ch.abertschi.Filters.class.getPackage() will turn into **/ch/abertschi/**
+    // - ch.abertschi.Filters.class will turn into **/ch/abertschi/Filters*
+
     public static List<Filter> use(Filter.FilterType type, String... pattern)
     {
         return $.map(Arrays.asList(pattern), p -> new Filter(type, p));
@@ -59,20 +65,35 @@ public class Filters
 
     private static String getClassPattern(Class<?> type)
     {
-        return MatcherUtils.transformToMatchAnyParent(
-                MatcherUtils.transformToMatchAnySuffixInSameDirectory(
+        return matchAnyParentDirectory(
+                matchAnySuffixInSameDirectory(
                         packageToFileStructure(type.getCanonicalName())));
     }
 
     private static String getPackagePattern(Package p)
     {
-        return MatcherUtils.transformToMatchAnyParent(
-                MatcherUtils.transformToMatchAnyChild(
+        return matchAnyParentDirectory(
+                matchAnyChildDirectory(
                         packageToFileStructure(p.getName())));
     }
 
     private static String packageToFileStructure(String packageName)
     {
         return packageName.replace(".", "/");
+    }
+
+    private static String matchAnyParentDirectory(String path)
+    {
+        return "**/" + path;
+    }
+
+    private static String matchAnyChildDirectory(String path)
+    {
+        return path + "/**";
+    }
+
+    private static String matchAnySuffixInSameDirectory(String path)
+    {
+        return path + "*";
     }
 }

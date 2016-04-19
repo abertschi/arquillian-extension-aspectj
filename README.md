@@ -30,6 +30,12 @@ create().weave("webarchive.war")
         .weave().filter().include().include().include().exclude().applyFilter()
         .withAspectLibrary().filter()
 
+
+// how to use filters
+// shrinkwrap: all paths start with /
+// **/*test should include /**/*test
+//
+
 ```java
 
 @Deployment

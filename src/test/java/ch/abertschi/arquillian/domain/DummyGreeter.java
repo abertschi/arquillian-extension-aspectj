@@ -3,6 +3,7 @@ package ch.abertschi.arquillian.domain;
 import org.jboss.arquillian.core.api.annotation.Inject;
 
 import javax.annotation.PostConstruct;
+import javax.ejb.DependsOn;
 import javax.ejb.Singleton;
 import javax.ejb.Startup;
 
@@ -17,8 +18,8 @@ public class DummyGreeter
     Greeting greeting;
 
     @PostConstruct
-    public void sayGreeting() {
-        System.out.println(greeting.greet());
+    public void sayGreeting()
+    {
     }
 
     public String getGreeting() {

@@ -5,6 +5,8 @@ import org.jboss.shrinkwrap.api.*;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.importer.ZipImporter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.AntPathMatcher;
 
 import java.util.ArrayList;
@@ -17,6 +19,7 @@ import java.util.Map;
  */
 public class ArchiveSearch
 {
+    private static final Logger LOG = LoggerFactory.getLogger(ArchiveSearch.class);
 
     /*
      * BasicPath always starts with /
@@ -31,16 +34,27 @@ public class ArchiveSearch
 
     private static List<String> SUPPORTED_NESTED_CONTAINERS = Arrays.asList(".jar", ".war");
 
+    private static String preparePattern(String pattern)
+    {
+        return !pattern.startsWith("/") ? "/" + pattern : pattern;
+    }
+
+    private static List<String> preparePatterns(List<String> patterns)
+    {
+        return $.map(patterns, s -> preparePattern(s));
+    }
+
     public static List<ArchiveSearchResult> searchInArchive(Archive<?> archive, String pattern)
     {
+        pattern = preparePattern(pattern);
         String name = "/" + archive.getName();
         List<ArchiveSearchResult> returns = _searchInArchive(archive, name, pattern);
 
         boolean matched = MATCHER.match(pattern, name);
-        System.out.println(String.format("matching %s with %s: %s", name, pattern, matched));
+        LOG.debug(String.format("matching %s with %s: %s", name, pattern, matched));
         if (matched)
         {
-            System.out.println("matched!");
+            LOG.debug("matched!");
             ArchiveSearchResult result = new ArchiveSearchResult()
                     .setPath(name)
                     .setArchive(archive)
@@ -57,14 +71,14 @@ public class ArchiveSearch
         for (Map.Entry<ArchivePath, Node> entry : archive.getContent().entrySet())
         {
             String path = basepath + entry.getKey().get().toString();
-            System.out.println("comparing " + pattern + " with " + path);
+            LOG.debug("comparing " + pattern + " with " + path);
 
             boolean matched = MATCHER.match(pattern, path);
-            System.out.println(String.format("matching %s with %s: %s", path, pattern, matched));
+            LOG.debug(String.format("matching %s with %s: %s", path, pattern, matched));
             if (matched)
             {
                 Archive<?> subArchive = convertToArchive(entry.getValue().getAsset());
-                System.out.println("matched!");
+                LOG.debug("matched!");
                 ArchiveSearchResult result = new ArchiveSearchResult()
                         .setPath(path)
                         .setArchive(subArchive)
@@ -89,15 +103,16 @@ public class ArchiveSearch
 
     public static Archive<?> filterArchive(Archive<?> archive, List<String> includes, List<String> excludes)
     {
-        boolean hasIncludeFilter = !$.isEmpty(includes) ? true: false;
-        boolean hasExcludeFilter = !$.isEmpty(excludes) ? true: false;
+        includes = preparePatterns(includes);
+        excludes = preparePatterns(excludes);
+        boolean hasIncludeFilter = !$.isEmpty(includes) ? true : false;
+        boolean hasExcludeFilter = !$.isEmpty(excludes) ? true : false;
 
+        LOG.debug("includes");
+        $.forEach(includes, s -> LOG.debug(s));
 
-        System.out.println("includes");
-        $.forEach(includes, s -> System.out.println(s));
-
-        System.out.println("excludes");
-        $.forEach(excludes, s -> System.out.println(s));
+        LOG.debug("excludes");
+        $.forEach(excludes, s -> LOG.debug(s));
 
         Archive<?> filteredArchive = archive.shallowCopy();
         if (hasIncludeFilter || hasExcludeFilter)
@@ -111,7 +126,7 @@ public class ArchiveSearch
                     if (hasIncludeFilter && !matchesPattern(asset, includes)
                             || hasExcludeFilter && matchesPattern(asset, excludes))
                     {
-                        System.out.println("Removing from " + archive.getName() + " " + entry.getKey());
+                        LOG.debug("Removing from " + archive.getName() + " " + entry.getKey());
                         filteredArchive.delete(entry.getKey());
                     }
                 }
@@ -122,6 +137,7 @@ public class ArchiveSearch
 
     public static Archive<?> replaceArchive(Archive<?> archive, String searchKey, Archive<?> replace)
     {
+        searchKey = preparePattern(searchKey);
         Archive<?> source = archive.shallowCopy();
         String basename = "/" + source.getName();
         if (searchKey.equals(basename))
@@ -150,7 +166,7 @@ public class ArchiveSearch
             String path = basepath + entry.getKey().get().toString();
             if (key.equals(path))
             {
-                System.out.println(String.format("Replacing %s with %s", key, replace.getName()));
+                LOG.debug(String.format("Replacing %s with %s", key, replace.getName()));
                 copy.delete(entry.getKey());
                 copy.add(replace, entry.getKey(), ZipExporter.class);
                 match = copy;
@@ -164,7 +180,7 @@ public class ArchiveSearch
                     Archive<?> subReplace = _replaceArchive(subArchive, key, path, replace);
                     if (!$.isNull(subReplace))
                     {
-                        System.out.println(String.format("Replacing %s with %s", key, replace.getName()));
+                        LOG.debug(String.format("Replacing %s with %s", key, replace.getName()));
                         copy.delete(entry.getKey());
                         copy.add(subReplace, entry.getKey(), ZipExporter.class);
                         match = copy;
@@ -182,7 +198,7 @@ public class ArchiveSearch
         for (String pat : patterns)
         {
             boolean matched = MATCHER.match(pat, path);
-            System.out.println(String.format("matching %s with %s: %s", path, pat, matched));
+            LOG.debug(String.format("matching %s with %s: %s", path, pat, matched));
             if (matched)
             {
                 matches = true;

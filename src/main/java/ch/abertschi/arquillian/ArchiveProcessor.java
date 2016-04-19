@@ -16,6 +16,8 @@ import org.jboss.arquillian.test.spi.TestClass;
 import org.jboss.shrinkwrap.api.*;
 import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,6 +28,8 @@ import java.util.*;
  */
 public class ArchiveProcessor implements ApplicationArchiveProcessor
 {
+    private static final Logger LOG = LoggerFactory.getLogger(ArchiveProcessor.class);
+
     private static final String CONFIG_FILE = "/META-INF/aspectj.json";
 
     @Override
@@ -44,19 +48,16 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
                 {
                     Archive<?> compiled = compiler.compileTimeWeave(weave.getValue1(), aspects);
 
-                    System.out.println("COMPILED:");
-                    $.forEach(compiled.getContent().keySet(), o -> System.out.println(o));
+                    $.forEach(compiled.getContent().keySet(), o -> LOG.debug(o.get()));
 
                     compiled.as(ZipExporter.class).exportTo(new File(".", "compiled.jar"), true);
 
                     Archive<?> replace = weave.getValue0().getArchive().merge(compiled);
-                    //Archive<?> replace = mergeAndReplace(weave.getValue0().getArchive(), compiled);
 
                     replace.as(ZipExporter.class).exportTo(new File(".", "replaced.jar"), true);
 
-
-                    System.out.println("merged:");
-                    $.forEach(replace.getContent().keySet(), o -> System.out.println(o));
+                    LOG.debug("merged:");
+                    $.forEach(replace.getContent().keySet(), o -> LOG.debug(o.get()));
 
                     // merge all aspect libraries into recompiled aspect so they are available for sure
 
@@ -82,7 +83,7 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
             {
                 if (fromEntry.getValue().getAsset() != null)
                 {
-                    System.out.println("delete " + fromEntry.getKey());
+                    LOG.debug("delete " + fromEntry.getKey());
                     into.delete(fromEntry.getKey());
                 }
             }
@@ -163,7 +164,7 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
             try
             {
                 json = IOUtils.toString(configNode.getAsset().openStream(), "UTF-8");
-                System.out.println(json);
+                LOG.debug(json);
             }
             catch (IOException e)
             {

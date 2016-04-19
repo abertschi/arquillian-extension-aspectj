@@ -28,14 +28,13 @@ public class JarDeploymentIT
     @Deployment
     public static Archive<?> deploy()
     {
-        String deploymentName = "ebj.jar";
         String json = AspectjDescriptor
                 .create()
-                .weave(deploymentName)
+                .weave()
                 .addWeaveDependency()
                 .exportAsString();
 
-        return ShrinkWrap.create(JavaArchive.class, deploymentName)
+        return ShrinkWrap.create(JavaArchive.class)
                 .addClass(JarDeploymentIT.class)
                 .addPackages(true, Greeting.class.getPackage())
                 .addAsManifestResource(new StringAsset(json), "aspectj.json")
