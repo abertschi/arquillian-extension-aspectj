@@ -46,22 +46,22 @@ public class ArchiveSearch
 
     public static List<ArchiveSearchResult> searchInArchive(Archive<?> archive, String pattern)
     {
+        List<ArchiveSearchResult> returns = new ArrayList<>();
         pattern = preparePattern(pattern);
         String name = "/" + archive.getName();
-        List<ArchiveSearchResult> returns = _searchInArchive(archive, name, pattern);
 
-        boolean matched = MATCHER.match(pattern, name);
-        LOG.debug(String.format("matching %s with %s: %s", name, pattern, matched));
-        if (matched)
+        if (MATCHER.match(pattern, name))
         {
-            LOG.debug("matched!");
             ArchiveSearchResult result = new ArchiveSearchResult()
                     .setPath(name)
                     .setArchive(archive)
                     .setParentArchive(null);
 
+            LOG.debug(String.format("archive [%s] found with matching pattern %s", name, pattern));
             returns.add(result);
         }
+
+        returns.addAll(_searchInArchive(archive, name, pattern));
         return returns;
     }
 
@@ -71,28 +71,22 @@ public class ArchiveSearch
         for (Map.Entry<ArchivePath, Node> entry : archive.getContent().entrySet())
         {
             String path = basepath + entry.getKey().get().toString();
-            LOG.debug("comparing " + pattern + " with " + path);
-
-            boolean matched = MATCHER.match(pattern, path);
-            LOG.debug(String.format("matching %s with %s: %s", path, pattern, matched));
-            if (matched)
+            if (MATCHER.match(pattern, path))
             {
                 Archive<?> subArchive = convertToArchive(entry.getValue().getAsset());
-                LOG.debug("matched!");
                 ArchiveSearchResult result = new ArchiveSearchResult()
                         .setPath(path)
                         .setArchive(subArchive)
                         .setParentArchive(archive);
 
+                LOG.debug(String.format("archive [%s] found with matching pattern %s", path, pattern));
                 returns.add(result);
             }
-
             if (isNestedContainer(path))
             {
                 Archive<?> subArchive = convertToArchive(entry.getValue().getAsset());
-
                 List<ArchiveSearchResult> subResults = _searchInArchive(subArchive, path, pattern);
-                if (subResults != null && subResults.size() > 0)
+                if ($.isEmpty(subResults))
                 {
                     returns.addAll(subResults);
                 }
@@ -107,12 +101,6 @@ public class ArchiveSearch
         excludes = preparePatterns(excludes);
         boolean hasIncludeFilter = !$.isEmpty(includes) ? true : false;
         boolean hasExcludeFilter = !$.isEmpty(excludes) ? true : false;
-
-        LOG.debug("includes");
-        $.forEach(includes, s -> LOG.debug(s));
-
-        LOG.debug("excludes");
-        $.forEach(excludes, s -> LOG.debug(s));
 
         Archive<?> filteredArchive = archive.shallowCopy();
         if (hasIncludeFilter || hasExcludeFilter)
@@ -197,9 +185,7 @@ public class ArchiveSearch
         boolean matches = false;
         for (String pat : patterns)
         {
-            boolean matched = MATCHER.match(pat, path);
-            LOG.debug(String.format("matching %s with %s: %s", path, pat, matched));
-            if (matched)
+            if (MATCHER.match(pat, path))
             {
                 matches = true;
                 break;

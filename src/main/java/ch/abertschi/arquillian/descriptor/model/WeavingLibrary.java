@@ -10,6 +10,7 @@ public class WeavingLibrary
 {
     private String name = "";
     private boolean weaveEverything = false;
+    private boolean matchMultiple = false;
     private List<String> includes = new ArrayList<>();
     private List<String> excludes = new ArrayList<>();
     private List<AspectLibrary> aspects = new ArrayList<>();
@@ -76,6 +77,16 @@ public class WeavingLibrary
     public WeavingLibrary setWeaveEverything(boolean weaveEverything)
     {
         this.weaveEverything = weaveEverything;
+        return this;
+    }
+    public boolean isMatchMultiple()
+    {
+        return matchMultiple;
+    }
+
+    public WeavingLibrary setMatchMultiple(boolean matchMultiple)
+    {
+        this.matchMultiple = matchMultiple;
         return this;
     }
 }

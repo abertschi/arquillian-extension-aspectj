@@ -32,6 +32,14 @@ public class AjCompiler
     {
     }
 
+    protected List<String> getInitialOptions() {
+        List<String> options = new ArrayList<>();
+        options.add("-Xlint:ignore");
+        options.add("-showWeaveInfo");
+
+        return options;
+    }
+
     public List<Archive<?>> getRuntimeLibraries()
     {
         return (List<Archive<?>>) ((Object) ResolverUtil.get().resolve(AJRT).withTransitivity().asList(JavaArchive.class));
@@ -39,10 +47,10 @@ public class AjCompiler
 
     public Archive<?> compileTimeWeave(List<Archive<?>> weavingLibraries, List<Archive<?>> aspectLibraries)
     {
-        $.forEach(weavingLibraries, archive -> $.forEach(archive.getContent().keySet(), archivePath -> LOG.debug("Weaving node " + archivePath)));
-        $.forEach(aspectLibraries, archive -> $.forEach(archive.getContent().keySet(), archivePath -> LOG.debug("Aspect node " + archivePath)));
+        //$.forEach(weavingLibraries, archive -> $.forEach(archive.getContent().keySet(), archivePath -> LOG.debug("Weaving node " + archivePath)));
+        //$.forEach(aspectLibraries, archive -> $.forEach(archive.getContent().keySet(), archivePath -> LOG.debug("Aspect node " + archivePath)));
 
-        List<String> options = new ArrayList<>();
+        List<String> options = getInitialOptions();
         File base = new File(new File("."), "./target/aj");
         base.mkdirs();
         options.add("-d");
@@ -50,6 +58,7 @@ public class AjCompiler
 
         String weaved = "./target/weaved.jar";
         File weavedFile = new File(new File("."), weaved);
+
 
         options.add("-outjar");
         options.add(weavedFile.getAbsolutePath());

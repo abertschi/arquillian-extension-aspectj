@@ -15,6 +15,8 @@ public interface AspectjDescriptorBuilder
 
     interface WeavingLibraryOptionInitial extends WeavingLibraryOption, FilterOption<WeavingLibraryOptionInitial>
     {
+        WeavingLibraryOptionInitial matchMultiple();
+        //WeavingLibraryOptionInitial useCache();
     }
 
     interface WeavingLibraryOption
@@ -26,6 +28,8 @@ public interface AspectjDescriptorBuilder
 
     interface AspectLibraryOption extends FilterOption<AspectLibraryOption>
     {
+//        AspectLibraryOption includeTransitiveDependencies();
+
         WeavingLibraryOption addAspectLibrary();
     }
 

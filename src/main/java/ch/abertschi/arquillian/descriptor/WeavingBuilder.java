@@ -19,6 +19,7 @@ public class WeavingBuilder extends FilterBase<WeavingLibraryOptionInitial> impl
     private boolean mWeaveEverything = false;
 
     private List<AspectBuilder> mAspectBuilders = new ArrayList<>();
+    private boolean mMatchMultiple = false;
 
     public WeavingBuilder(AspectjDescriptorBuilder rootBuilder, String name)
     {
@@ -50,8 +51,16 @@ public class WeavingBuilder extends FilterBase<WeavingLibraryOptionInitial> impl
     {
         return new WeavingLibrary(mName)
                 .setWeaveEverything(mWeaveEverything)
+                .setMatchMultiple(mMatchMultiple)
                 .setIncludes($.map(super.getIncludeFilters(), filter -> filter.getFilter()))
                 .setExcludes($.map(super.getExcludeFilters(), filter -> filter.getFilter()))
                 .setAspects($.map(mAspectBuilders, aspectBuilder -> aspectBuilder.build()));
+    }
+
+    @Override
+    public WeavingLibraryOptionInitial matchMultiple()
+    {
+        mMatchMultiple = true;
+        return this;
     }
 }

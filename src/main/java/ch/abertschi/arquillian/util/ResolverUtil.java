@@ -1,14 +1,6 @@
 package ch.abertschi.arquillian.util;
 
-import org.jboss.shrinkwrap.api.Archive;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.jboss.shrinkwrap.resolver.api.ResolveStage;
 import org.jboss.shrinkwrap.resolver.api.maven.*;
-import org.jboss.shrinkwrap.resolver.api.maven.archive.importer.MavenImporter;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Created by abertschi on 28/03/16.
@@ -18,6 +10,7 @@ public class ResolverUtil
     private static ResolverUtil instance;
 
     private MavenResolverSystem mResolver;
+
     private PomEquippedResolveStage mPomEquippedResolver;
 
     public static ResolverUtil get()
@@ -31,9 +24,13 @@ public class ResolverUtil
 
     private ResolverUtil()
     {
+        // TODO: Resolve via plugin not working, custom artifact repository not chosen
         if (ResolverConfig.isShrinkwrapResolveViaPlugin())
         {
-            mPomEquippedResolver = Maven.configureResolverViaPlugin();
+            mPomEquippedResolver = Maven.configureResolver()
+                    .workOffline(ResolverConfig.isMavenOffline())
+                    .fromFile(ResolverConfig.getMavenExecutionGlobalSettings())
+                    .loadPomFromFile(ResolverConfig.getMavenExecutionPomFile());
         }
         else if (ResolverConfig.isShrinkwrapResolveViaPom())
         {

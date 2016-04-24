@@ -47,48 +47,22 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
                 for (Pair<ArchiveSearch.ArchiveSearchResult, Archive> weave : weavings)
                 {
                     Archive<?> compiled = compiler.compileTimeWeave(weave.getValue1(), aspects);
-
-                    $.forEach(compiled.getContent().keySet(), o -> LOG.debug(o.get()));
-
-                    compiled.as(ZipExporter.class).exportTo(new File(".", "compiled.jar"), true);
-
                     Archive<?> replace = weave.getValue0().getArchive().merge(compiled);
 
-                    replace.as(ZipExporter.class).exportTo(new File(".", "replaced.jar"), true);
-
-                    LOG.debug("merged:");
-                    $.forEach(replace.getContent().keySet(), o -> LOG.debug(o.get()));
-
                     // merge all aspect libraries into recompiled aspect so they are available for sure
-
                     for (Archive<?> aspect : $.concat(compiler.getRuntimeLibraries()))
                     {
                         replace = replace.merge(aspect);
                     }
 
-                    Archive<?> deployableReplaced =
-                            ArchiveSearch.replaceArchive(deployableArchive, weave.getValue0().getPath(), replace);
-
+                    Archive<?> deployableReplaced = ArchiveSearch.replaceArchive(deployableArchive, weave.getValue0().getPath(), replace);
                     deployableArchive.merge(deployableReplaced);
-                }
-            }
-        }
-    }
 
-    private Archive<?> mergeAndReplace(Archive<?> from, Archive<?> into)
-    {
-        for (Map.Entry<ArchivePath, Node> fromEntry : from.getContent().entrySet())
-        {
-            if (into.contains(fromEntry.getKey()))
-            {
-                if (fromEntry.getValue().getAsset() != null)
-                {
-                    LOG.debug("delete " + fromEntry.getKey());
-                    into.delete(fromEntry.getKey());
+                    replace.as(ZipExporter.class).exportTo(new File(".", "replaced.jar"), true);
+                    compiled.as(ZipExporter.class).exportTo(new File(".", "compiled.jar"), true);
                 }
             }
         }
-        return into.merge(from);
     }
 
     private List<Archive<?>> getAspectLibraries(Archive<?> sourceArchive, List<AspectLibrary> aspectDescriptors)
