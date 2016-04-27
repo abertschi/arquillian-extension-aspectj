@@ -15,7 +15,6 @@ public interface AspectjDescriptorBuilder
 
     interface WeavingLibraryOptionInitial extends WeavingLibraryOption, FilterOption<WeavingLibraryOptionInitial>
     {
-        WeavingLibraryOptionInitial matchMultiple();
         //WeavingLibraryOptionInitial useCache();
     }
 

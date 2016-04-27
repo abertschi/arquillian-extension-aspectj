@@ -7,7 +7,7 @@
     <parent>
         <groupId>ch.abertschi</groupId>
         <artifactId>abertschi-oss-parent</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>0.0.1</version>
     </parent>
 
     <groupId>ch.abertschi.arquillian</groupId>

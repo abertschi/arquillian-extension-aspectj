@@ -3,6 +3,7 @@ package ch.abertschi.arquillian;
 import com.github.underscore.$;
 import org.jboss.shrinkwrap.api.*;
 import org.jboss.shrinkwrap.api.asset.Asset;
+import org.jboss.shrinkwrap.api.container.LibraryContainer;
 import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.importer.ZipImporter;
 import org.slf4j.Logger;
@@ -44,7 +45,7 @@ public class ArchiveSearch
         return $.map(patterns, s -> preparePattern(s));
     }
 
-    public static List<ArchiveSearchResult> searchInArchive(Archive<?> archive, String pattern)
+    public static List<ArchiveSearchResult> searchInArchive(Archive<?> archive, String pattern, boolean matchMultiple)
     {
         List<ArchiveSearchResult> returns = new ArrayList<>();
         pattern = preparePattern(pattern);
@@ -57,20 +58,24 @@ public class ArchiveSearch
                     .setArchive(archive)
                     .setParentArchive(null);
 
-            LOG.debug(String.format("archive [%s] found with matching pattern %s", name, pattern));
+            LOG.debug(String.format("Archive [%s] found with matching pattern %s", name, pattern));
             returns.add(result);
         }
 
-        returns.addAll(_searchInArchive(archive, name, pattern));
+        if (matchMultiple || $.isEmpty(returns))
+        {
+            returns.addAll(_searchInArchive(archive, name, pattern, matchMultiple));
+        }
         return returns;
     }
 
-    private static List<ArchiveSearchResult> _searchInArchive(Archive<?> archive, String basepath, String pattern)
+    private static List<ArchiveSearchResult> _searchInArchive(Archive<?> archive, String basepath, String pattern, boolean matchMultiple)
     {
         List<ArchiveSearchResult> returns = new ArrayList<>();
         for (Map.Entry<ArchivePath, Node> entry : archive.getContent().entrySet())
         {
             String path = basepath + entry.getKey().get().toString();
+            LOG.debug(String.format("Searching [%s] in [%s]", pattern, path));
             if (MATCHER.match(pattern, path))
             {
                 Archive<?> subArchive = convertToArchive(entry.getValue().getAsset());
@@ -79,16 +84,24 @@ public class ArchiveSearch
                         .setArchive(subArchive)
                         .setParentArchive(archive);
 
-                LOG.debug(String.format("archive [%s] found with matching pattern %s", path, pattern));
+                LOG.debug(String.format("Asset [%s] found with matching pattern %s", path, pattern));
                 returns.add(result);
+                if (!matchMultiple)
+                {
+                    break;
+                }
             }
             if (isNestedContainer(path))
             {
                 Archive<?> subArchive = convertToArchive(entry.getValue().getAsset());
-                List<ArchiveSearchResult> subResults = _searchInArchive(subArchive, path, pattern);
-                if ($.isEmpty(subResults))
+                List<ArchiveSearchResult> subResults = _searchInArchive(subArchive, path, pattern, matchMultiple);
+                if (!$.isEmpty(subResults))
                 {
                     returns.addAll(subResults);
+                    if (!matchMultiple)
+                    {
+                        break;
+                    }
                 }
             }
         }
@@ -111,6 +124,7 @@ public class ArchiveSearch
                 if (isFile)
                 {
                     String asset = entry.getKey().get();
+                    //LOG.debug(String.format("Filtering [%s] "));
                     if (hasIncludeFilter && !matchesPattern(asset, includes)
                             || hasExcludeFilter && matchesPattern(asset, excludes))
                     {
@@ -123,18 +137,18 @@ public class ArchiveSearch
         return filteredArchive;
     }
 
-    public static Archive<?> replaceArchive(Archive<?> archive, String searchKey, Archive<?> replace)
+    public static Archive<?> replaceArchive(final Archive<?> archive, String searchKey, Archive<?> replace)
     {
         searchKey = preparePattern(searchKey);
-        Archive<?> source = archive.shallowCopy();
-        String basename = "/" + source.getName();
+        String basename = "/" + archive.getName();
         if (searchKey.equals(basename))
         {
-            return replace;
+            archive.merge(replace);
+            return archive;
         }
         else
         {
-            Archive<?> replaced = _replaceArchive(source, searchKey, basename, replace);
+            Archive<?> replaced = _replaceArchive(archive, searchKey, basename, replace);
             if ($.isNull(replaced))
             {
                 String msg = String.format("No entry found with Node %s to replace in %s", searchKey, basename);
@@ -145,9 +159,14 @@ public class ArchiveSearch
         }
     }
 
-    private static Archive<?> _replaceArchive(Archive<?> parentArchive, String key, String basepath, Archive<?> replace)
+    private static String getArchiveName(ArchivePath path)
     {
-        Archive<?> copy = parentArchive.shallowCopy();
+        String[] split = path.get().split("/");
+        return split[split.length - 1];
+    }
+
+    private static Archive<?> _replaceArchive(final Archive<?> parentArchive, String key, String basepath, Archive<?> replace)
+    {
         Archive<?> match = null;
         for (Map.Entry<ArchivePath, Node> entry : parentArchive.getContent().entrySet())
         {
@@ -155,9 +174,13 @@ public class ArchiveSearch
             if (key.equals(path))
             {
                 LOG.debug(String.format("Replacing %s with %s", key, replace.getName()));
-                copy.delete(entry.getKey());
-                copy.add(replace, entry.getKey(), ZipExporter.class);
-                match = copy;
+                parentArchive.delete(entry.getKey());
+
+                String name = getArchiveName(entry.getKey());
+                GenericArchive merge = ShrinkWrap.create(GenericArchive.class, name).merge(replace);
+
+                parentArchive.add(merge, entry.getKey().getParent(), ZipExporter.class);
+                match = parentArchive;
                 break;
             }
             else if (key.contains(path))
@@ -169,9 +192,9 @@ public class ArchiveSearch
                     if (!$.isNull(subReplace))
                     {
                         LOG.debug(String.format("Replacing %s with %s", key, replace.getName()));
-                        copy.delete(entry.getKey());
-                        copy.add(subReplace, entry.getKey(), ZipExporter.class);
-                        match = copy;
+                        parentArchive.delete(entry.getKey());
+                        parentArchive.add(subReplace, entry.getKey(), ZipExporter.class);
+                        match = parentArchive;
                         break;
                     }
                 }

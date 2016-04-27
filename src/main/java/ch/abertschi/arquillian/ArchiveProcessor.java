@@ -14,6 +14,7 @@ import org.javatuples.Pair;
 import org.jboss.arquillian.container.test.spi.client.deployment.ApplicationArchiveProcessor;
 import org.jboss.arquillian.test.spi.TestClass;
 import org.jboss.shrinkwrap.api.*;
+import org.jboss.shrinkwrap.api.container.LibraryContainer;
 import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.slf4j.Logger;
@@ -47,19 +48,18 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
                 for (Pair<ArchiveSearch.ArchiveSearchResult, Archive> weave : weavings)
                 {
                     Archive<?> compiled = compiler.compileTimeWeave(weave.getValue1(), aspects);
+                    $.forEach(compiled.getContent().entrySet(), archivePathNodeEntry -> LOG.trace("Compiled node: " + archivePathNodeEntry.getKey()));
+
                     Archive<?> replace = weave.getValue0().getArchive().merge(compiled);
 
                     // merge all aspect libraries into recompiled aspect so they are available for sure
-                    for (Archive<?> aspect : $.concat(compiler.getRuntimeLibraries()))
+                    for (Archive<?> aspect : $.concat(compiler.getRuntimeLibraries(), aspects))
                     {
                         replace = replace.merge(aspect);
                     }
+                    //addAsLibraryOrMerge(rep)
 
-                    Archive<?> deployableReplaced = ArchiveSearch.replaceArchive(deployableArchive, weave.getValue0().getPath(), replace);
-                    deployableArchive.merge(deployableReplaced);
-
-                    replace.as(ZipExporter.class).exportTo(new File(".", "replaced.jar"), true);
-                    compiled.as(ZipExporter.class).exportTo(new File(".", "compiled.jar"), true);
+                    ArchiveSearch.replaceArchive(deployableArchive, weave.getValue0().getPath(), replace);
                 }
             }
         }
@@ -79,7 +79,7 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
             else
             {
                 String searchPattern = MatcherUtils.transformToMatchAnyParent(aspectDescriptor.getName());
-                aspects = $.map(ArchiveSearch.searchInArchive(sourceArchive, searchPattern), matchResult -> matchResult.getArchive());
+                aspects = $.map(ArchiveSearch.searchInArchive(sourceArchive, searchPattern, false), matchResult -> matchResult.getArchive());
             }
             if ($.isEmpty(aspects))
             {
@@ -108,7 +108,7 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
             pattern = MatcherUtils.transformToMatchAnyParent(weavingDescriptor.getName());
         }
         List<Pair<ArchiveSearch.ArchiveSearchResult, Archive>> returns = new ArrayList<>();
-        List<ArchiveSearch.ArchiveSearchResult> weavings = ArchiveSearch.searchInArchive(sourceArchive, pattern);
+        List<ArchiveSearch.ArchiveSearchResult> weavings = ArchiveSearch.searchInArchive(sourceArchive, pattern, false);
 
         if (!$.isEmpty(weavings))
         {
@@ -168,5 +168,17 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
             }
         }
         return model;
+    }
+
+    private void addAsLibraryOrMerge(Archive<?> base, List<Archive> toAdd)
+    {
+        if (base instanceof LibraryContainer)
+        {
+            ((LibraryContainer) base).addAsLibraries(toAdd);
+        }
+        else
+        {
+            $.forEach(toAdd, archive -> base.merge(archive));
+        }
     }
 }
