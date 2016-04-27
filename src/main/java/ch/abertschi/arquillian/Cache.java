@@ -96,7 +96,7 @@ public class Cache
         cacheIndex.put(key, value);
 
         File cacheIndexFile = getCacheIndexFile();
-        FileOutputStream out = null;
+        FileOutputStream out;
         try
         {
             out = new FileOutputStream(cacheIndexFile);

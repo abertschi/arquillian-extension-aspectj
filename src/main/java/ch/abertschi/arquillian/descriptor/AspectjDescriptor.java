@@ -24,6 +24,7 @@ public class AspectjDescriptor implements AspectjDescriptorBuilder
                 .weave()
                 .filter(Filters.exclude(AspectjDescriptorBuilder.class))
                 .filter(Filters.include("**/*test*"))
+                .aspectLibrary()
                 .addWeaveDependency()
                 .exportAsString();
 
