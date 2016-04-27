@@ -84,6 +84,7 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
         }
         else
         {
+            LOG.info(String.format("Recompiling weaving library %s", source.getName()));
             return COMPILER.compileTimeWeave(source, aspects);
         }
     }
