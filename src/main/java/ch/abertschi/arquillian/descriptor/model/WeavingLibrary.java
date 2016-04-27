@@ -10,6 +10,7 @@ public class WeavingLibrary
 {
     private String name = "";
     private boolean weaveEverything = false;
+    private boolean useCache = false;
     private List<String> includes = new ArrayList<>();
     private List<String> excludes = new ArrayList<>();
     private List<AspectLibrary> aspects = new ArrayList<>();
@@ -78,4 +79,16 @@ public class WeavingLibrary
         this.weaveEverything = weaveEverything;
         return this;
     }
+
+    public boolean isUseCache()
+    {
+        return useCache;
+    }
+
+    public WeavingLibrary setUseCache(boolean useCache)
+    {
+        this.useCache = useCache;
+        return this;
+    }
+
 }

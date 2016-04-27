@@ -47,9 +47,6 @@ public class AjCompiler
 
     public Archive<?> compileTimeWeave(List<Archive<?>> weavingLibraries, List<Archive<?>> aspectLibraries)
     {
-        //$.forEach(weavingLibraries, archive -> $.forEach(archive.getContent().keySet(), archivePath -> LOG.debug("Weaving node " + archivePath)));
-        //$.forEach(aspectLibraries, archive -> $.forEach(archive.getContent().keySet(), archivePath -> LOG.debug("Aspect node " + archivePath)));
-
         List<String> options = getInitialOptions();
         File base = new File(new File("."), "./target/aj");
         base.mkdirs();

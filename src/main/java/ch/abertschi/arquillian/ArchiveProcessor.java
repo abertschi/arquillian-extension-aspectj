@@ -33,13 +33,14 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
 
     private static final String CONFIG_FILE = "/META-INF/aspectj.json";
 
+    private static final AjCompiler COMPILER = new AjCompiler();
+
     @Override
     public void process(Archive<?> deployableArchive, TestClass testClass)
     {
         AspectjDescriptorModel model = getConfigurationFromArchive(deployableArchive);
         if (!$.isNull(model))
         {
-            AjCompiler compiler = new AjCompiler();
             for (WeavingLibrary weavingDescriptor : model.getWeaving())
             {
                 List<Pair<ArchiveSearch.ArchiveSearchResult, Archive>> weavings = getWeavingLibraries(deployableArchive, weavingDescriptor);
@@ -47,19 +48,43 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
 
                 for (Pair<ArchiveSearch.ArchiveSearchResult, Archive> weave : weavings)
                 {
-                    Archive<?> compiled = compiler.compileTimeWeave(weave.getValue1(), aspects);
+                    Archive<?> compiled = compile(weave.getValue1(), aspects, weavingDescriptor);
                     $.forEach(compiled.getContent().entrySet(), archivePathNodeEntry -> LOG.trace("Compiled node: " + archivePathNodeEntry.getKey()));
 
                     Archive<?> replace = weave.getValue0().getArchive().merge(compiled);
 
                     // merge all aspect libraries into recompiled aspect so they are available for sure
-                    for (Archive<?> aspect : $.concat(compiler.getRuntimeLibraries(), aspects))
+                    for (Archive<?> aspect : $.concat(COMPILER.getRuntimeLibraries(), aspects))
                     {
                         replace = replace.merge(aspect);
                     }
                     ArchiveSearch.replaceArchive(deployableArchive, weave.getValue0().getPath(), replace);
                 }
             }
+        }
+    }
+
+    private Archive<?> compile(Archive<?> source, List<Archive<?>> aspects, WeavingLibrary descriptor)
+    {
+        if (descriptor.isUseCache())
+        {
+            Archive<?> cached = Cache.getFromCache(source);
+            if (cached == null)
+            {
+                LOG.info(String.format("Recompiling weaving library %s", source.getName()));
+                Archive<?> compiled = COMPILER.compileTimeWeave(source, aspects);
+                Cache.storeInCache(source, compiled);
+                return compiled;
+            }
+            else
+            {
+                LOG.info(String.format("Skipping aspectj compilation. Using cached archive %s from %s", source.getName(), Cache.getCacheBaseDir()));
+                return cached;
+            }
+        }
+        else
+        {
+            return COMPILER.compileTimeWeave(source, aspects);
         }
     }
 
@@ -91,7 +116,7 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
                 returns.add(ArchiveSearch.filterArchive(aspect, aspectIncludes, aspectExcludes));
             }
         }
-        $.forEach(returns, archive -> LOG.info("Found aspect library %s", archive.getId()));
+        $.forEach(returns, archive -> LOG.info(String.format("Found aspect library %s", archive.getName())));
         return Collections.unmodifiableList(returns);
     }
 
@@ -126,7 +151,7 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
             throw new RuntimeException(msg);
         }
 
-        $.forEach(returns, archive -> LOG.info("Found weaving library %s", archive.getValue0().getPath()));
+        $.forEach(returns, archive -> LOG.info(String.format("Found weaving library %s", archive.getValue0().getPath())));
         return Collections.unmodifiableList(returns);
     }
 
