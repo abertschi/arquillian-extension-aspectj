@@ -57,8 +57,6 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
                     {
                         replace = replace.merge(aspect);
                     }
-                    //addAsLibraryOrMerge(rep)
-
                     ArchiveSearch.replaceArchive(deployableArchive, weave.getValue0().getPath(), replace);
                 }
             }
@@ -93,6 +91,7 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
                 returns.add(ArchiveSearch.filterArchive(aspect, aspectIncludes, aspectExcludes));
             }
         }
+        $.forEach(returns, archive -> LOG.info("Found aspect library %s", archive.getId()));
         return Collections.unmodifiableList(returns);
     }
 
@@ -123,9 +122,11 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
         }
         else
         {
-            String msg = String.format("weaving %s could not be found in deployable", weavingDescriptor.getName());
+            String msg = String.format("Weaving %s could not be found in deployable", weavingDescriptor.getName());
             throw new RuntimeException(msg);
         }
+
+        $.forEach(returns, archive -> LOG.info("Found weaving library %s", archive.getValue0().getPath()));
         return Collections.unmodifiableList(returns);
     }
 
