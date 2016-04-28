@@ -7,16 +7,15 @@
     <parent>
         <groupId>ch.abertschi</groupId>
         <artifactId>abertschi-oss-parent</artifactId>
-        <version>0.0.1</version>
+        <version>0.0.2</version>
     </parent>
 
     <groupId>ch.abertschi.arquillian</groupId>
     <artifactId>arquillian-extension-aspectj</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.1-alpha2-SNAPSHOT</version>
 
     <properties>
         <version.arquillian>1.1.3.Final</version.arquillian>
-        <JAVA_HOME_1_7>NOT SET!</JAVA_HOME_1_7>
     </properties>
 
     <repositories>
@@ -218,13 +217,8 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.19.1</version>
                 <configuration>
-                    <jvm>${JAVA_HOME_1_7}/bin/java</jvm>
-                    <forkMode>once</forkMode>
                     <trimStackTrace>false</trimStackTrace>
                     <useFile>false</useFile>
-                    <systemPropertyVariables>
-                        <JAVA_HOME_1_7>${JAVA_HOME_1_7}</JAVA_HOME_1_7>
-                    </systemPropertyVariables>
                 </configuration>
             </plugin>
             <plugin>
@@ -239,48 +233,35 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <jvm>${JAVA_HOME_1_7}/bin/java</jvm>
-                    <forkMode>once</forkMode>
                     <trimStackTrace>false</trimStackTrace>
                     <useFile>false</useFile>
-                    <systemPropertyVariables>
-                        <JAVA_HOME_1_7>${JAVA_HOME_1_7}</JAVA_HOME_1_7>
-                    </systemPropertyVariables>
                 </configuration>
             </plugin>
         </plugins>
     </build>
     <profiles>
         <profile>
-            <id>arquillian-jbossas-managed</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
+            <id>wildfly-embedded</id>
+            <activation><activeByDefault>true</activeByDefault></activation>
             <dependencies>
                 <dependency>
-                    <groupId>org.jboss.spec</groupId>
-                    <artifactId>jboss-javaee-6.0</artifactId>
-                    <version>1.0.0.Final</version>
-                    <type>pom</type>
-                    <scope>provided</scope>
+                    <groupId>org.wildfly</groupId>
+                    <artifactId>wildfly-arquillian-container-embedded</artifactId>
+                    <version>8.1.0.Final</version>
                 </dependency>
                 <dependency>
-                    <groupId>org.jboss.as</groupId>
-                    <artifactId>jboss-as-arquillian-container-managed</artifactId>
-                    <version>7.1.1.Final</version>
-                    <scope>test</scope>
-                </dependency>
-                <dependency>
-                    <groupId>org.jboss.arquillian.protocol</groupId>
-                    <artifactId>arquillian-protocol-servlet</artifactId>
-                    <version>${version.arquillian}</version>
-                    <scope>test</scope>
+                    <groupId>org.wildfly</groupId>
+                    <artifactId>wildfly-embedded</artifactId>
+                    <version>8.1.0.Final</version>
                 </dependency>
             </dependencies>
+
             <build>
                 <plugins>
                     <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-dependency-plugin</artifactId>
+                        <version>2.8</version>
                         <executions>
                             <execution>
                                 <id>unpack</id>
@@ -291,9 +272,9 @@
                                 <configuration>
                                     <artifactItems>
                                         <artifactItem>
-                                            <groupId>org.jboss.as</groupId>
-                                            <artifactId>jboss-as-dist</artifactId>
-                                            <version>7.1.1.Final</version>
+                                            <groupId>org.wildfly</groupId>
+                                            <artifactId>wildfly-dist</artifactId>
+                                            <version>8.1.0.Final</version>
                                             <type>zip</type>
                                             <overWrite>false</overWrite>
                                             <outputDirectory>target</outputDirectory>
@@ -302,6 +283,38 @@
                                 </configuration>
                             </execution>
                         </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>2.17</version>
+                        <configuration>
+                            <!-- Fork every test because it will launch a separate AS instance -->
+                            <forkMode>always</forkMode>
+                            <systemPropertyVariables>
+                                <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                                <!-- the maven dependency plugin will have already downloaded the server on /target -->
+                                <jboss.home>${project.basedir}/target/wildfly-8.1.0.Final</jboss.home>
+                                <module.path>${project.basedir}/target/wildfly-8.1.0.Final/modules</module.path>
+                            </systemPropertyVariables>
+                            <redirectTestOutputToFile>false</redirectTestOutputToFile>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <version>2.6</version>
+                        <configuration>
+                            <!-- Fork every test because it will launch a separate AS instance -->
+                            <forkMode>always</forkMode>
+                            <systemPropertyVariables>
+                                <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                                <!-- the maven dependency plugin will have already downloaded the server on /target -->
+                                <jboss.home>${project.basedir}/target/wildfly-8.1.0.Final</jboss.home>
+                                <module.path>${project.basedir}/target/wildfly-8.1.0.Final/modules</module.path>
+                            </systemPropertyVariables>
+                            <redirectTestOutputToFile>false</redirectTestOutputToFile>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>

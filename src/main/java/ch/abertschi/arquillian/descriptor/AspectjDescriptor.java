@@ -17,19 +17,6 @@ import java.util.List;
  */
 public class AspectjDescriptor implements AspectjDescriptorBuilder
 {
-    public static void main(String[] args)
-    {
-        String json = AspectjDescriptor
-                .create()
-                .weave()
-                .filter(Filters.exclude(AspectjDescriptorBuilder.class))
-                .filter(Filters.include("**/*test*"))
-                .aspectLibrary()
-                .addWeaveDependency()
-                .exportAsString();
-
-        System.out.println(json);
-    }
 
     private static final Logger LOG = LoggerFactory.getLogger(AspectjDescriptor.class);
 

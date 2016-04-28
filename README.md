@@ -1,10 +1,12 @@
-- wip, no production ready build
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/ch.abertschi.arquillian/arquillian-extension-aspectj/badge.svg?style=flat)](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22arquillian-extension-aspectj%22)
+[![Build Status](https://travis-ci.org/abertschi/arquillian-extension-aspectj.svg?branch=master)](https://travis-ci.org/abertschi/arquillian-extension-aspectj) 
+
 
 # arquillian-extension-aspectj
 
 > A JBoss Arquillian extension for AspectJ.
 
-This extension compile-time weaves aspects into your Arquillian deployment using the using the AspectJ compiler ("ajc").
+This extension compile-time weaves aspects into your Arquillian deployment using the AspectJ compiler ("ajc").
     
 ## Usage
 
@@ -14,7 +16,7 @@ Add *arquillian-extension-aspectj* to your maven project.
 <dependency>
     <groupId>ch.abertschi.arquillian</groupId>
     <artifactId>arquillian-extension-aspectj</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>VERSION</version>
     <scope>test</scope>
 </dependency>    
 ```    
@@ -72,8 +74,8 @@ Filtering by glob pattern, by package name and by class type is supported.
 String json = AspectjDescriptor
         .create()
         .weave()
-        .filter(Filters.include(**/*controller*"))
-        .filter(Filters.include(Login.class, Logout.class"))
+        .filter(Filters.include("**/*controller*"))
+        .filter(Filters.include(Login.class, Logout.class))
         .filter(Filters.exclude(Debbuging.class.getPackage()))
         .addWeaveDependency()
         .exportAsString();
@@ -134,16 +136,113 @@ public class JarDeploymentIT
     {
         String expected = "arquillian!";
         System.out.println(greeter.getGreeting());
-        Assert.assertEquals(greeter.getGreeting(), expected);
+        Assert.assertEquals(greeter.getGreeting(), expected); // will say arquillian! instead of aspect!
     }
 }
 ```
 
-## Implementation resources
-- shrinkwrap-resolver-properties:
-  - [all properties](https://books.google.ch/books?id=3S0QAwAAQBAJ&pg=PA35&lpg=PA35&dq=org.apache.maven.user-settings&source=bl&ots=iCQHdu0Y5x&sig=8H4MDbGF3tHN7MtvuzU0W2TYELM&hl=en&sa=X&ved=0ahUKEwi91auB1PLLAhVE_iwKHUZ9A64Q6AEIUzAJ#v=onepage&q=org.apache.maven.user-settings&f=false)
-  - [behind proxy](http://stackoverflow.com/questions/6291146/arquillian-shrinkwrap-mavendependencyresolver-behind-proxy)
+```java
+@Aspect
+public class SayArquillianAspect
+{
+    @Around("call(* ch.abertschi.arquillian.domain.Greeting.*(..))")
+    public Object doNothing()
+    {
+        return "arquillian!";
+    }
+}
+```
 
-- aj options:
-  - more options here https://eclipse.org/aspectj/doc/next/devguide/ltw-configuration.html#configuring-load-time-weaving-with-aopxml-files
-  - more options here http://www.mojohaus.org/aspectj-maven-plugin/compile-mojo.html
+```java
+@Stateless
+@Startup
+public class Greeting
+{
+    public String greet()
+    {
+        return "aspect!";
+    }
+}
+```
+
+```java
+@Singleton
+@Startup
+public class DummyGreeter
+{
+    @Inject
+    Greeting greeting;
+
+    @PostConstruct
+    public void sayGreeting()
+    {
+    }
+
+    public String getGreeting() {
+        return greeting.greet();
+    }
+}
+```
+
+## Behind a corporate proxy
+This extension uses the Shrinkwrap Resolver Project to resolve necessary dependencies. If you encouter connection problems, you may configure the [shrinkwrap-resolver-maven-plugin](https://github.com/shrinkwrap/resolver) and set the following system properties.
+
+```xml
+<plugin>
+  <groupId>org.jboss.shrinkwrap.resolver</groupId>
+  <artifactId>shrinkwrap-resolver-maven-plugin</artifactId>
+  <executions>
+    <execution>
+      <goals>
+        <goal>propagate-execution-context</goal>
+      </goals>
+    </execution>
+  </executions>
+</plugin>
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-surefire-plugin</artifactId>
+    <configuration>
+      <systemPropertyVariables>
+        <shrinkwrap.resolve-via-plugin>true</shrinkwrap.resolve-via-plugin>
+        <org.apache.maven.offline>true</org.apache.maven.offline>
+      </systemPropertyVariables>
+    </configuration>
+</plugin>
+```
+
+## Build it!
+This project is compatible with JDK 1.7 but uses features (notablly lambdas) of Java 8.
+The [retrolambda-maven-plugin](https://github.com/orfjackal/retrolambda) is used to transpile new features to Java 7.
+Set the maven property `JAVA_HOME_1_7` to JAVA_HOME of Java 7.
+
+## Bleeding Edge
+
+Get snapshot artifacts from:
+```xml
+<repositories>
+    <repository>
+        <id>abertschi.snapshots</id>
+        <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        <releases>
+            <enabled>false</enabled>
+        </releases>
+        <snapshots>
+            <enabled>true</enabled>
+        </snapshots>
+    </repository>
+    <repository>
+        <id>abertschi.releases</id>
+        <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        <releases>
+            <enabled>true</enabled>
+        </releases>
+        <snapshots>
+            <enabled>false</enabled>
+        </snapshots>
+    </repository>
+</repositories>
+```
+## License
+MIT
+

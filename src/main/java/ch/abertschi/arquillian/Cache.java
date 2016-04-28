@@ -105,11 +105,11 @@ public class Cache
         }
         catch (FileNotFoundException e)
         {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
         catch (IOException e)
         {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
 
     }

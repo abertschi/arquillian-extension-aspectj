@@ -6,7 +6,7 @@ import org.jboss.arquillian.core.spi.LoadableExtension;
 /**
  * Created by abertschi on 25/03/16.
  */
-public class AspectJExtension implements LoadableExtension
+public class AspectjExtension implements LoadableExtension
 {
     @Override
     public void register(ExtensionBuilder builder)

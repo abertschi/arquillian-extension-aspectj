@@ -21,3 +21,4 @@ public class AspectjDescriptorModel
         return this;
     }
 }
+ 
