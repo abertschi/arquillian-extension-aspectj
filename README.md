@@ -10,11 +10,14 @@ This extension compile-time weaves aspects into your Arquillian deployment using
 
 Add *arquillian-extension-aspectj* to your maven project.
 
+```xml
+<dependency>
     <groupId>ch.abertschi.arquillian</groupId>
     <artifactId>arquillian-extension-aspectj</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <scope>test</scope>
-    
+</dependency>    
+```    
 Generate a configuration file *aspectj.json* and add it as a manifest resource to your deployment.
 
 ### Configuration
@@ -30,14 +33,28 @@ String json = AspectjDescriptor
         .addWeaveDependency()
         .exportAsString();
 ```
-This will compile-time weave everything in your deployment.
-
-#### Weaving and AspectJ libraries
+This will compile-time weave everything in your deployment archive using applicable aspects found in the deployment.
+For *WebArchive* or *EnterpriseArchive* deployments, the weaving library should be selected by name using: 
 
 ```java
 String json = AspectjDescriptor
         .create()
-        .weave("**/lib/weaving-lib.jar)
+        .weave("**/lib/name-of-weaving-lib*")
+        .addWeaveDependency()
+        .exportAsString();
+```
+
+Glob patterns applicable for [AntPathMatcher](http://docs.spring.io/spring/docs/current/javadoc-api/org/springframework/util/AntPathMatcher.html) can be used.
+
+#### AspectJ libraries
+
+Aspect libraries can manually be added to the Arquillian archive or resolved from the Internet with Maven Coordinates.
+The [Shrinkwrap Resolvers project](https://github.com/shrinkwrap/resolver) is used in that case.
+
+```java
+String json = AspectjDescriptor
+        .create()
+        .weave("**/lib/weaving-lib.jar")
         .aspectLibrary("ch.abertschi:myaspects:1.0.0")
         .addAspectLibrary()
         .aspectLibrary("**/lib/myaspects.jar")
@@ -48,21 +65,79 @@ String json = AspectjDescriptor
 
 #### Filtering
 
-You can filter your weaving and aspect libraries.
+You can filter weaving and aspect libraries.
+Filtering by glob pattern, by package name and by class type is supported.
 
 ```java
 String json = AspectjDescriptor
         .create()
         .weave()
-        .filter(Filters.exclude("**/Debugger*"))
-        .filter(Filters.include(Logging.class.getPackage()))
+        .filter(Filters.include(**/*controller*"))
+        .filter(Filters.include(Login.class, Logout.class"))
+        .filter(Filters.exclude(Debbuging.class.getPackage()))
+        .addWeaveDependency()
+        .exportAsString();
+```
+
+```java
+String json = AspectjDescriptor
+        .create()
+        .weave()
+        .aspectLibrary("ch.abertschi:myaspects:1.0.0")
+        .filter(Filters.exclude(DebuggingAspect.class.getPackage()))
+        .addAspectLibrary()
         .addWeaveDependency()
         .exportAsString();
 ```
 
 #### Caching
 
+To speed up the compile-time compilation process, a caching feature can be activated.
+
+```java
+String json = AspectjDescriptor
+        .create()
+        .weave()
+        .useCache()
+        .addWeaveDependency()
+        .exportAsString();
+```
+The current cache implementation caches compiled artifacts based on their size.
+
 ## Arquillian test
+```java
+
+@RunWith(Arquillian.class)
+public class JarDeploymentIT
+{
+    @Inject
+    DummyGreeter greeter;
+
+    @Deployment
+    public static Archive<?> deploy()
+    {
+        String json = AspectjDescriptor
+                .create()
+                .weave()
+                .addWeaveDependency()
+                .exportAsString();
+
+        return ShrinkWrap.create(JavaArchive.class)
+                .addClass(JarDeploymentIT.class)
+                .addPackages(true, Greeting.class.getPackage())
+                .addAsManifestResource(new StringAsset(json), "aspectj.json")
+                .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml");
+    }
+
+    @Test
+    public void test_around_aspect()
+    {
+        String expected = "arquillian!";
+        System.out.println(greeter.getGreeting());
+        Assert.assertEquals(greeter.getGreeting(), expected);
+    }
+}
+```
 
 ## Implementation resources
 - shrinkwrap-resolver-properties:
