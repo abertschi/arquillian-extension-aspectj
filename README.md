@@ -211,38 +211,10 @@ This extension uses the Shrinkwrap Resolver Project to resolve necessary depende
 </plugin>
 ```
 
-## Build it!
-This project is compatible with JDK 1.7 but uses features (notablly lambdas) of Java 8.
-The [retrolambda-maven-plugin](https://github.com/orfjackal/retrolambda) is used to transpile new features to Java 7.
-Set the maven property `JAVA_HOME_1_7` to JAVA_HOME of Java 7.
-
 ## Bleeding Edge
 
-Get snapshot artifacts from:
-```xml
-<repositories>
-    <repository>
-        <id>abertschi.snapshots</id>
-        <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        <releases>
-            <enabled>false</enabled>
-        </releases>
-        <snapshots>
-            <enabled>true</enabled>
-        </snapshots>
-    </repository>
-    <repository>
-        <id>abertschi.releases</id>
-        <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        <releases>
-            <enabled>true</enabled>
-        </releases>
-        <snapshots>
-            <enabled>false</enabled>
-        </snapshots>
-    </repository>
-</repositories>
-```
+Get snapshot artifacts from [https://oss.sonatype.org/content/repositories/snapshots](https://oss.sonatype.org/content/repositories/snapshots/ch/abertschi/arquillian/arquillian-extension-aspectj/)
+
 ## License
 MIT
 
