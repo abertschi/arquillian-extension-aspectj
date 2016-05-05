@@ -36,7 +36,7 @@ String json = AspectjDescriptor
         .exportAsString();
 ```
 This will compile-time weave everything in your deployment archive using applicable aspects found in the deployment.
-For *WebArchive* or *EnterpriseArchive* deployments, the weaving library should be selected by name using: 
+For *WebArchive* or *EnterpriseArchive* deployments, you may select weaving libraries by name. 
 
 ```java
 String json = AspectjDescriptor
@@ -94,7 +94,7 @@ String json = AspectjDescriptor
 
 #### Caching
 
-To speed up the compile-time compilation process, a caching feature can be activated.
+To speed up the compile-time compilation process, you may activate caching.
 
 ```java
 String json = AspectjDescriptor
@@ -205,7 +205,6 @@ This extension uses the Shrinkwrap Resolver Project to resolve necessary depende
     <configuration>
       <systemPropertyVariables>
         <shrinkwrap.resolve-via-plugin>true</shrinkwrap.resolve-via-plugin>
-        <org.apache.maven.offline>true</org.apache.maven.offline>
       </systemPropertyVariables>
     </configuration>
 </plugin>
