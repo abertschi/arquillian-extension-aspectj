@@ -12,7 +12,7 @@ This extension compile-time weaves aspects into your Arquillian deployment using
     
 ## Usage
 
-Add *arquillian-extension-aspectj* to your maven project.
+Add *arquillian-extension-aspectj* to your Maven project.
 
 ```xml
 <dependency>
@@ -28,7 +28,7 @@ Generate a configuration file *aspectj.json* and add it as a manifest resource t
 
 Use the builder class *ch.abertschi.arquillian.descriptor.AspectjDescriptor* to generate a configuration file.
 
-The simplest configuration looks like following:
+The simplest configuration looks like shown below:
 
 ```java
 String json = AspectjDescriptor
@@ -37,8 +37,8 @@ String json = AspectjDescriptor
         .addWeaveDependency()
         .exportAsString();
 ```
-This will compile-time weave everything in your deployment archive using applicable aspects found in the deployment.
-For *WebArchive* or *EnterpriseArchive* deployments, you may select weaving libraries by name. 
+This compile-time weaves the root archive of your deployment using applicable aspects found within the archive.
+For *WebArchive* or *EnterpriseArchive* deployments though, you may select weaving libraries by name:
 
 ```java
 String json = AspectjDescriptor
@@ -59,9 +59,9 @@ The [Shrinkwrap Resolvers project](https://github.com/shrinkwrap/resolver) is us
 String json = AspectjDescriptor
         .create()
         .weave("**/lib/weaving-lib.jar")
-        .aspectLibrary("ch.abertschi:myaspects:1.0.0")
+        .aspectLibrary("ch.abertschi:myaspects:1.0.0")  // Resolve aspects from Maven Central
         .addAspectLibrary()
-        .aspectLibrary("**/lib/myaspects.jar")
+        .aspectLibrary("**/lib/myaspects.jar")          // Use aspects already added to the archive        
         .addAspectLibrary()
         .addWeaveDependency()
         .exportAsString();
@@ -187,7 +187,7 @@ public class DummyGreeter
 ```
 
 ## Behind a corporate proxy
-This extension uses the Shrinkwrap Resolver Project to resolve necessary dependencies. If you encouter connection problems, you may configure the [shrinkwrap-resolver-maven-plugin](https://github.com/shrinkwrap/resolver) and set the following system properties.
+This extension uses the Shrinkwrap Resolver Project to resolve necessary dependencies for AspectJ and referenced aspect libraries. If you encouter connection problems, you may configure the [shrinkwrap-resolver-maven-plugin](https://github.com/shrinkwrap/resolver) and set the following system properties.
 
 ```xml
 <plugin>
