@@ -1,8 +1,7 @@
 package ch.abertschi.arquillian;
 
-import ch.abertschi.arquillian.domain.DummyGreeter;
-import ch.abertschi.arquillian.domain.aspect.SayArquillianAspect;
 import ch.abertschi.arquillian.descriptor.AspectjDescriptor;
+import ch.abertschi.arquillian.domain.DummyGreeter;
 import ch.abertschi.arquillian.domain.Greeting;
 import junit.framework.Assert;
 import org.jboss.arquillian.container.test.api.Deployment;
@@ -11,7 +10,7 @@ import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -19,7 +18,7 @@ import javax.inject.Inject;
 
 
 @RunWith(Arquillian.class)
-public class JarDeploymentIT
+public class WarDeploymentTest
 {
 
     @Inject
@@ -34,8 +33,8 @@ public class JarDeploymentIT
                 .addWeaveDependency()
                 .exportAsString();
 
-        return ShrinkWrap.create(JavaArchive.class)
-                .addClass(JarDeploymentIT.class)
+        return ShrinkWrap.create(WebArchive.class)
+                .addClass(WarDeploymentTest.class)
                 .addPackages(true, Greeting.class.getPackage())
                 .addAsManifestResource(new StringAsset(json), "aspectj.json")
                 .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml");

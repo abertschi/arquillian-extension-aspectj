@@ -255,22 +255,7 @@
                     <useFile>false</useFile>
                 </configuration>
             </plugin>
-            <plugin>
-                <artifactId>maven-failsafe-plugin</artifactId>
-                <version>2.19.1</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>integration-test</goal>
-                            <goal>verify</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <trimStackTrace>false</trimStackTrace>
-                    <useFile>false</useFile>
-                </configuration>
-            </plugin>
+
         </plugins>
     </build>
     <profiles>
@@ -326,22 +311,6 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <version>2.17</version>
-                        <configuration>
-                            <!-- Fork every test because it will launch a separate AS instance -->
-                            <forkMode>always</forkMode>
-                            <systemPropertyVariables>
-                                <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                                <!-- the maven dependency plugin will have already downloaded the server on /target -->
-                                <jboss.home>${project.basedir}/target/wildfly-8.1.0.Final</jboss.home>
-                                <module.path>${project.basedir}/target/wildfly-8.1.0.Final/modules</module.path>
-                            </systemPropertyVariables>
-                            <redirectTestOutputToFile>false</redirectTestOutputToFile>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                        <version>2.6</version>
                         <configuration>
                             <!-- Fork every test because it will launch a separate AS instance -->
                             <forkMode>always</forkMode>
