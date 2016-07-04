@@ -7,6 +7,7 @@ import org.aspectj.bridge.MessageHandler;
 import org.aspectj.tools.ajc.Main;
 import org.jboss.shrinkwrap.api.*;
 import org.jboss.shrinkwrap.api.exporter.ZipExporter;
+import org.jboss.shrinkwrap.api.importer.ExplodedImporter;
 import org.jboss.shrinkwrap.api.importer.ZipImporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
@@ -17,6 +18,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -32,7 +34,8 @@ public class AjCompiler
     {
     }
 
-    protected List<String> getInitialOptions() {
+    protected List<String> getInitialOptions()
+    {
         List<String> options = new ArrayList<>();
         options.add("-Xlint:ignore");
         options.add("-showWeaveInfo");
@@ -48,27 +51,32 @@ public class AjCompiler
     public Archive<?> compileTimeWeave(List<Archive<?>> weavingLibraries, List<Archive<?>> aspectLibraries)
     {
         List<String> options = getInitialOptions();
-        File base = new File(new File("."), "./target/aj");
+        File base = new File(new File("."), "target/arquillian-aspectj");
         base.mkdirs();
+
+        File weavingWork = new File(base, "weaving-out-" + System.currentTimeMillis());
+        weavingWork.mkdirs();
         options.add("-d");
-        options.add(base.getAbsolutePath());
+        options.add(weavingWork.getAbsolutePath());
 
-        String weaved = "./target/weaved.jar";
-        File weavedFile = new File(new File("."), weaved);
+        //options.add("-outjar");
+        //options.add(weavedFile.getAbsolutePath());
 
-
-        options.add("-outjar");
-        options.add(weavedFile.getAbsolutePath());
-
-        File weavingBase = new File(new File("."), "./target/ajc");
-        List<File> inPaths = exportAsZip(weavingLibraries, weavingBase);
-        String inPath = $.join($.map(inPaths, file -> file.getAbsolutePath()), File.pathSeparator);
+        File inpathDir = new File(base, "inpath");
+        base.mkdirs();
+        List<File> inpathJars = exportAsZip(weavingLibraries, inpathDir);
+        String inpathArgs = $.join($.map(inpathJars, file -> file.getAbsolutePath()), File.pathSeparator);
 
         options.add("-inpath");
-        options.add(inPath);
+        options.add(inpathArgs);
 
-        File aspectBase = new File(new File("."), "./target/aspects");
-        List<File> aspectFiles = exportAsZip(aspectLibraries, aspectBase);
+        File aspectBase = new File(base, "aspectlibs");
+
+        List<Archive<?>> aspectWithRuntime = new ArrayList<>();
+        aspectWithRuntime.addAll(aspectLibraries);
+        aspectWithRuntime.addAll(getRuntimeLibraries());
+
+        List<File> aspectFiles = exportAsZip(aspectWithRuntime, aspectBase);
         String aspects = $.join($.map(aspectFiles, file -> file.getAbsolutePath()), File.pathSeparator);
 
         options.add("-aspectpath");
@@ -81,7 +89,7 @@ public class AjCompiler
         IMessage[] ms = m.getMessages(null, true);
         $.forEach(Arrays.asList(ms), o -> LOG.debug(o.getMessage()));
 
-        return importFromZip(weavedFile);
+        return importFromDir(weavingWork);
     }
 
     public Archive<?> compileTimeWeave(Archive<?> weavingLibrary, List<Archive<?>> aspectLibraries)
@@ -98,21 +106,12 @@ public class AjCompiler
         return compileTimeWeave(weavingLibrary, libs);
     }
 
-    private JavaArchive importFromZip(File where)
+    private JavaArchive importFromDir(File where)
     {
-        try
-        {
-            return ShrinkWrap.create(ZipImporter.class)
-                    .importFrom(where.toURI().toURL().openStream())
-                    .as(org.jboss.shrinkwrap.api.spec.JavaArchive.class);
-        }
-        catch (IOException e)
-        {
-            String msg = String.format("%s can not be found", where.getAbsolutePath());
-            throw new RuntimeException(msg);
-        }
+        return ShrinkWrap.create(ExplodedImporter.class)
+                .importDirectory(where)
+                .as(org.jboss.shrinkwrap.api.spec.JavaArchive.class);
     }
-
 
     private File exportAsZip(Archive<?> archive, File basepath)
     {

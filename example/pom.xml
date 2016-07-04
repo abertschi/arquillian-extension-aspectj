@@ -11,5 +11,41 @@
 
     <artifactId>arquillian-extension-aspectj-examples</artifactId>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>com.googlecode.maven-download-plugin</groupId>
+                <artifactId>download-maven-plugin</artifactId>
+                <version>1.2.1</version>
+                <executions>
+                    <execution>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>
+                                http://repo.maven.apache.org/maven2/org/apache/tomee/apache-tomee/7.0.1/apache-tomee-7.0.1-webprofile.zip
+                            </url>
+                            <unpack>true</unpack>
+                            <outputFileName>tomee.zip</outputFileName>
+                            <outputDirectory>${project.build.directory}/tomee</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+
+
+                <groupId>org.apache.tomee.maven</groupId>
+                <artifactId>tomee-embedded-maven-plugin</artifactId>
+                <version></version>
+                <configuration>
+                    <tomeeVersion>1.7.1</tomeeVersion>
+                    <tomeeClassifier>plus</tomeeClassifier>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>

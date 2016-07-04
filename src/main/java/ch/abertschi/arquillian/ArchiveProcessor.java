@@ -14,9 +14,11 @@ import org.javatuples.Pair;
 import org.jboss.arquillian.container.test.spi.client.deployment.ApplicationArchiveProcessor;
 import org.jboss.arquillian.test.spi.TestClass;
 import org.jboss.shrinkwrap.api.*;
+import org.jboss.shrinkwrap.api.asset.NamedAsset;
 import org.jboss.shrinkwrap.api.container.LibraryContainer;
 import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +37,8 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
 
     private static final AjCompiler COMPILER = new AjCompiler();
 
+    private static final Cache CACHE = Cache.createWithDefaults();
+
     @Override
     public void process(Archive<?> deployableArchive, TestClass testClass)
     {
@@ -43,21 +47,26 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
         {
             for (WeavingLibrary weavingDescriptor : model.getWeaving())
             {
+                // find weaving and aspect libraries
                 List<Pair<ArchiveSearch.ArchiveSearchResult, Archive>> weavings = getWeavingLibraries(deployableArchive, weavingDescriptor);
                 List<Archive<?>> aspects = getAspectLibraries(deployableArchive, weavingDescriptor.getAspects());
 
+                // compile with aspectj
                 for (Pair<ArchiveSearch.ArchiveSearchResult, Archive> weave : weavings)
                 {
                     Archive<?> compiled = compile(weave.getValue1(), aspects, weavingDescriptor);
                     $.forEach(compiled.getContent().entrySet(), archivePathNodeEntry -> LOG.trace("Compiled node: " + archivePathNodeEntry.getKey()));
 
-                    Archive<?> replace = weave.getValue0().getArchive().merge(compiled);
+                    // merge compiled classes back to container
+                    Archive replace = mergeArchive(weave.getValue0().getArchive(), compiled);
 
                     // merge all aspect libraries into recompiled aspect so they are available for sure
                     for (Archive<?> aspect : $.concat(COMPILER.getRuntimeLibraries(), aspects))
                     {
-                        replace = replace.merge(aspect);
+                        replace = mergeArchive(replace, aspect); // todo: this got deprecated
                     }
+
+                    // merge recompiled archive back to root container
                     ArchiveSearch.replaceArchive(deployableArchive, weave.getValue0().getPath(), replace);
                 }
             }
@@ -68,17 +77,17 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
     {
         if (descriptor.isUseCache())
         {
-            Archive<?> cached = Cache.getFromCache(source);
+            Archive<?> cached = CACHE.getFromCache(source);
             if (cached == null)
             {
                 LOG.info(String.format("Recompiling weaving library %s", source.getName()));
                 Archive<?> compiled = COMPILER.compileTimeWeave(source, aspects);
-                Cache.storeInCache(source, compiled);
+                CACHE.storeInCache(source, compiled);
                 return compiled;
             }
             else
             {
-                LOG.info(String.format("Skipping aspectj compilation. Using cached archive %s from %s", source.getName(), Cache.getCacheBaseDir()));
+                LOG.info(String.format("Skipping aspectj compilation. Using cached archive %s from %s", source.getName(), CACHE.getCacheBaseDir()));
                 return cached;
             }
         }
@@ -121,6 +130,7 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
         return Collections.unmodifiableList(returns);
     }
 
+    // returns <archive search result, archive filtered>
     private List<Pair<ArchiveSearch.ArchiveSearchResult, Archive>> getWeavingLibraries(Archive<?> sourceArchive, WeavingLibrary weavingDescriptor)
     {
         String pattern;
@@ -197,15 +207,21 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
         return model;
     }
 
-    private void addAsLibraryOrMerge(Archive<?> base, List<Archive> toAdd)
+    private boolean isWar(Archive archive)
     {
-        if (base instanceof LibraryContainer)
+        return archive instanceof WebArchive;
+    }
+
+    private Archive mergeArchive(Archive container, Archive child)
+    {
+        if (isWar(container))
         {
-            ((LibraryContainer) base).addAsLibraries(toAdd);
+            container = container.merge(child, "/WEB-INF/classes");
         }
         else
         {
-            $.forEach(toAdd, archive -> base.merge(archive));
+            container = container.merge(child);
         }
+        return container;
     }
 }

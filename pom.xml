@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -112,7 +112,6 @@
             <groupId>org.aspectj</groupId>
             <artifactId>aspectjweaver</artifactId>
             <version>1.8.9</version>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -277,17 +276,21 @@
     <profiles>
         <profile>
             <id>wildfly-embedded</id>
-            <activation><activeByDefault>true</activeByDefault></activation>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
             <dependencies>
                 <dependency>
                     <groupId>org.wildfly</groupId>
                     <artifactId>wildfly-arquillian-container-embedded</artifactId>
                     <version>8.1.0.Final</version>
+                    <scope>test</scope>
                 </dependency>
                 <dependency>
                     <groupId>org.wildfly</groupId>
                     <artifactId>wildfly-embedded</artifactId>
                     <version>8.1.0.Final</version>
+                    <scope>test</scope>
                 </dependency>
             </dependencies>
 

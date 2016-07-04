@@ -1,12 +1,10 @@
 package ch.abertschi.arquillian;
 
 import com.thoughtworks.xstream.XStream;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.IOUtils;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.GenericArchive;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.exporter.StreamExporter;
 import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.importer.ZipImporter;
 
@@ -24,20 +22,38 @@ public class Cache
     private static final String CACHE_INDEX = "cache-index.xml";
     private static final XStream XSTREAM = new XStream();
 
-    public static File getCacheBaseDir()
+    private File cacheHomeDir;
+
+    private Cache(File cacheFile)
+    {
+        this.cacheHomeDir = cacheFile;
+
+    }
+
+    public static Cache create(File location)
+    {
+        return new Cache(location);
+    }
+
+    public static Cache createWithDefaults()
     {
         String tmpDir = System.getProperty(TEMP_DIR);
         File cacheDir = new File(tmpDir, CACHE_DIR);
         cacheDir.mkdirs();
-        return cacheDir;
+        return new Cache(cacheDir);
     }
 
-    protected static File getCacheIndexFile()
+    public File getCacheBaseDir()
     {
-        return new File(getCacheBaseDir(), CACHE_INDEX);
+        return this.cacheHomeDir;
     }
 
-    public static String getChecksum(Archive<?> archive)
+    private File getCacheIndexFile()
+    {
+        return new File(this.cacheHomeDir, CACHE_INDEX);
+    }
+
+    public String getChecksum(Archive<?> archive)
     {
         try
         {
@@ -49,7 +65,7 @@ public class Cache
         }
     }
 
-    public static Archive<?> getFromCache(Archive<?> keyArchive)
+    public Archive<?> getFromCache(Archive<?> keyArchive)
     {
         String checksum = getChecksum(keyArchive);
         Map<String, String> storage = loadCacheIndex();
@@ -71,7 +87,7 @@ public class Cache
         }
     }
 
-    protected static void storeInCache(Archive<?> keyArchive, Archive<?> archiveToCache)
+    public void storeInCache(Archive<?> keyArchive, Archive<?> archiveToCache)
     {
         String checksum = getChecksum(keyArchive);
         File persist = new File(getCacheBaseDir(), checksum + "-" + archiveToCache.getName());
@@ -79,7 +95,7 @@ public class Cache
         addToCacheIndex(checksum, persist.getAbsolutePath());
     }
 
-    protected static Map<String, String> loadCacheIndex()
+    protected Map<String, String> loadCacheIndex()
     {
         Map<String, String> cacheIndex = new HashMap<>();
         File cacheIndexFile = getCacheIndexFile();
@@ -90,7 +106,7 @@ public class Cache
         return cacheIndex;
     }
 
-    protected static void addToCacheIndex(String key, String value)
+    protected void addToCacheIndex(String key, String value)
     {
         Map<String, String> cacheIndex = loadCacheIndex();
         cacheIndex.put(key, value);
