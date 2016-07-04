@@ -12,7 +12,7 @@
 
     <groupId>ch.abertschi.arquillian</groupId>
     <artifactId>arquillian-extension-aspectj</artifactId>
-    <version>0.0.1-alpha2</version>
+    <version>0.0.1-alpha3-SNAPSHOT</version>
 
     <developers>
         <developer>
