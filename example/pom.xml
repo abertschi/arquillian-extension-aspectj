@@ -103,7 +103,7 @@
         <dependency>
             <groupId>ch.abertschi.arquillian</groupId>
             <artifactId>arquillian-extension-aspectj</artifactId>
-            <version>0.0.1-alpha2-SNAPSHOT</version>
+            <version>0.0.1-alpha2</version>
             <scope>test</scope>
         </dependency>
 
