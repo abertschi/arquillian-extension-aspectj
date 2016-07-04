@@ -12,11 +12,10 @@ public class SetExecutionStatusToExecuted
 {
 
     @Around("@annotation(ch.abertschi.aspectj.Interceptor)")
-    public Object aroundInvoke()
+    public Object aroundInvoke(ProceedingJoinPoint method) throws Throwable
     {
-        System.out.println("within around aspect");
         Execution.GET.setExecutionStatus(Execution.ExecutionStatus.YES);
-        return "intercepted";
+        return method.proceed();
     }
 
 }

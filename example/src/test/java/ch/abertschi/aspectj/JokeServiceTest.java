@@ -9,6 +9,7 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
 
+import org.jboss.arquillian.test.api.ArquillianResource;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
@@ -33,19 +34,16 @@ import java.net.URL;
 @RunWith(Arquillian.class)
 public class JokeServiceTest
 {
+    private static final String BASE = "http://localhost:8080/my-app/";
 
-    @EJB
-    private JokeService service;
-
-    @Deployment(testable = false)
+    @Deployment
     public static Archive deploy()
     {
         String aspectj = AspectjDescriptor
                 .create()
-                .weave()
+                .weave("my-app.war")
                 .addWeaveDependency()
                 .exportAsString();
-
 
         return ShrinkWrap.create(WebArchive.class, "my-app.war")
                 .addPackage(JokeServiceTest.class.getPackage())
@@ -63,21 +61,28 @@ public class JokeServiceTest
     @Test()
     public void test_rest() throws UnirestException
     {
-        String base = new String("http://localhost:" + System.getProperty("tomee.httpPort"));
-        String jokeUrl = String.format("%s/my-app/joke", base);
+        // given
+        String jokeUrl = BASE + "joke/";
 
+        //when
         HttpResponse<String> joke = Unirest.get(jokeUrl).asString();
-        Assert.assertTrue(joke.getStatus() == 200);
 
+        // then
+        Assert.assertTrue(joke.getStatus() == 200);
     }
 
     @Test()
-    public void test_execution_status()
+    public void test_execution_status() throws UnirestException
     {
+        // given
+        String jokeUrl = BASE + "joke/";
         Execution.GET.setExecutionStatus(Execution.ExecutionStatus.NO);
-        String joke = service.tell();
-        Assert.assertNotNull(joke);
-        System.out.println(joke);
+
+        // when
+        HttpResponse<String> joke = Unirest.get(jokeUrl).asString();
+
+        // then
+        Assert.assertTrue(joke.getStatus() == 200);
         Assert.assertEquals(Execution.ExecutionStatus.YES, Execution.GET.getExectionStatus());
     }
 }

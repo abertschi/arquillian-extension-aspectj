@@ -1,7 +1,9 @@
 //package ch.abertschi.arquillian;
 //
 //import ch.abertschi.arquillian.descriptor.AspectjDescriptor;
+//import ch.abertschi.arquillian.descriptor.Filters;
 //import ch.abertschi.arquillian.domain.DummyGreeter;
+//import ch.abertschi.arquillian.domain.Greeting;
 //import junit.framework.Assert;
 //import org.aspectj.lang.annotation.Around;
 //import org.aspectj.lang.annotation.Aspect;
@@ -17,6 +19,8 @@
 //import org.junit.Test;
 //import org.junit.runner.RunWith;
 //
+//import javax.inject.Inject;
+//
 ///**
 // * Created by abertschi on 25/03/16.
 // */
@@ -25,23 +29,29 @@
 //public class EarDeploymentIT
 //{
 //
+//    @Inject
+//    DummyGreeter greeter;
+//
 //    @Deployment
 //    public static Archive<?> deploy()
 //    {
 //        String json = AspectjDescriptor
 //                .create()
-//                .weave("mywar.war")
+//                .weave("**/mytests.jar")
+//                .filter(Filters.include(Greeting.class.getPackage()))
 //                .addWeaveDependency()
+//
 //                .exportAsString();
 //
-//        EnterpriseArchive ear = ShrinkWrap.create(EnterpriseArchive.class, "myear.ear");
+//        EnterpriseArchive ear = ShrinkWrap
+//                .create(EnterpriseArchive.class, "myear.ear");
 //
 //        WebArchive war = ShrinkWrap.create(WebArchive.class, "mywar.war")
-//                .addPackages(true, DummyGreeter.class.getPackage())
 //                .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml");
 //
 //        JavaArchive jar = ShrinkWrap.create(JavaArchive.class, "mytests.jar")
-//                .addPackage(JarDeploymentIT.class.getPackage());
+//                .addPackages(true, Greeting.class.getPackage())
+//                .addPackage(EarDeploymentIT.class.getPackage());
 //
 //        war.addAsLibraries(jar);
 //        ear.addAsModule(war);
@@ -51,8 +61,10 @@
 //    }
 //
 //    @Test
-//    public void simpleRun()
+//    public void test_around_aspect()
 //    {
-//        Assert.assertTrue(true);
+//        String expected = "arquillian!";
+//        System.out.println(greeter.getGreeting());
+//        Assert.assertEquals(greeter.getGreeting(), expected);
 //    }
 //}

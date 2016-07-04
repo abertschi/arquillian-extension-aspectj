@@ -8,3 +8,4 @@ compiled.jar
 replaced.jar
 example2/example-arquillian-aspectj/all
 example2/example-arquillian-aspectj/all.war
+arquillian-extension-aspectj-examples.iml

@@ -9,10 +9,10 @@ import javax.ejb.*;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Response;
 
 @Path("joke")
 @Stateless
-@Local
 public class JokeService
 {
     private static final String JOKE_URL = "http://api.icndb.com/jokes/random";
@@ -20,7 +20,7 @@ public class JokeService
     @Interceptor
     @GET
     @Produces("text/plain")
-    public String tell()
+    public Response tell()
     {
         try
         {
@@ -29,16 +29,17 @@ public class JokeService
                     .asJson();
             if (joke.getStatus() == 200)
             {
-                return joke.getBody().getObject().getJSONObject("value").get("joke").toString();
+                String msg = joke.getBody().getObject().getJSONObject("value").get("joke").toString();
+                return Response.ok(msg).build();
             }
             else
             {
-                throw new RuntimeException("Can't talk to joke api");
+                return Response.status(500).build();
             }
         }
         catch (UnirestException e)
         {
-            throw new RuntimeException("Can't talk to joke api");
+            return Response.serverError().build();
         }
     }
 }
