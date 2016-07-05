@@ -110,7 +110,7 @@ The current cache implementation caches compiled artifacts based on their size.
 
 ## Arquillian test
 
-For more examples, see the [sample project](example/src/test/java/ch/abertschi/aspectj) and the [test classes](src/test/java/ch/abertschi/arquillian).
+For more examples, take a look at the [sample project](example/src/test/java/ch/abertschi/aspectj) and [test classes](src/test/java/ch/abertschi/arquillian).
 
 ```java
 
@@ -220,12 +220,12 @@ Get snapshot artifacts from [https://oss.sonatype.org/content/repositories/snaps
 
 ## Development note
 
-The following scenarios are implemented
+Ajc compilations of the the following scenarios are implemented.
 
 - [x] ajc compile JAR deployments
 - [x] ajc compile WAR deployments (/WEB-INF/classes)
 - [x] ajc compile JAR in WAR deployments (/WEB-INF/lib/)
 - [x] ajc compile JAR in EAR deployments
-- [] ajc compile WAR in EAR deployments
-- [] ajc compile JAR in WAR in EAR deployments
+- [ ] ajc compile WAR in EAR deployments
+- [ ] ajc compile JAR in WAR in EAR deployments
 
