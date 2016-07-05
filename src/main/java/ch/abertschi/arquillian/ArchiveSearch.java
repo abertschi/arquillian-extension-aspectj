@@ -23,27 +23,12 @@ public class ArchiveSearch
     private static final Logger LOG = LoggerFactory.getLogger(ArchiveSearch.class);
 
     /*
-     * BasicPath always starts with /
-     *  - relevant for filtering
-     *
-     *  current pattern: **\/ does not include leading /
-     *
-     * if only JavaArchive deployed, archive is identified by name
-     *
+     * Whereas supported filter pattern do not include a leading
+     * slash, BasicPath always does.
      */
     private static final AntPathMatcher MATCHER = new AntPathMatcher();
 
     private static List<String> SUPPORTED_NESTED_CONTAINERS = Arrays.asList(".jar", ".war");
-
-    private static String preparePattern(String pattern)
-    {
-        return !pattern.startsWith("/") ? "/" + pattern : pattern;
-    }
-
-    private static List<String> preparePatterns(List<String> patterns)
-    {
-        return $.map(patterns, s -> preparePattern(s));
-    }
 
     public static List<ArchiveSearchResult> searchInArchive(Archive<?> archive, String pattern, boolean matchMultiple)
     {
@@ -61,7 +46,6 @@ public class ArchiveSearch
             LOG.debug(String.format("Archive [%s] found with matching pattern %s", name, pattern));
             returns.add(result);
         }
-
         if (matchMultiple || $.isEmpty(returns))
         {
             returns.addAll(_searchInArchive(archive, name, pattern, matchMultiple));
@@ -124,7 +108,6 @@ public class ArchiveSearch
                 if (isFile)
                 {
                     String asset = entry.getKey().get();
-                    //LOG.debug(String.format("Filtering [%s] "));
                     if (hasIncludeFilter && !matchesPattern(asset, includes)
                             || hasExcludeFilter && matchesPattern(asset, excludes))
                     {
@@ -226,6 +209,16 @@ public class ArchiveSearch
     {
         return ShrinkWrap.create(ZipImporter.class)
                 .importFrom(asset.openStream()).as(GenericArchive.class);
+    }
+
+    private static String preparePattern(String pattern)
+    {
+        return !pattern.startsWith("/") ? "/" + pattern : pattern;
+    }
+
+    private static List<String> preparePatterns(List<String> patterns)
+    {
+        return $.map(patterns, s -> preparePattern(s));
     }
 
     public static class ArchiveSearchResult

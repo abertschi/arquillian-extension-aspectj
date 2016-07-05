@@ -10,19 +10,14 @@ import ch.abertschi.arquillian.util.ResolverUtil;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonMethod;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.javatuples.Pair;
 import org.jboss.arquillian.container.test.spi.client.deployment.ApplicationArchiveProcessor;
 import org.jboss.arquillian.test.spi.TestClass;
 import org.jboss.shrinkwrap.api.*;
-import org.jboss.shrinkwrap.api.asset.NamedAsset;
-import org.jboss.shrinkwrap.api.container.LibraryContainer;
-import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
@@ -48,26 +43,26 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
             for (WeavingLibrary weavingDescriptor : model.getWeaving())
             {
                 // find weaving and aspect libraries
-                List<Pair<ArchiveSearch.ArchiveSearchResult, Archive>> weavings = getWeavingLibraries(deployableArchive, weavingDescriptor);
+                List<WeavingLibrarySearchResult> weavingLibs = getWeavingLibraries(deployableArchive, weavingDescriptor);
                 List<Archive<?>> aspects = getAspectLibraries(deployableArchive, weavingDescriptor.getAspects());
 
                 // compile with aspectj
-                for (Pair<ArchiveSearch.ArchiveSearchResult, Archive> weave : weavings)
+                for (WeavingLibrarySearchResult weavingLib : weavingLibs)
                 {
-                    Archive<?> compiled = compile(weave.getValue1(), aspects, weavingDescriptor);
-                    $.forEach(compiled.getContent().entrySet(), archivePathNodeEntry -> LOG.trace("Compiled node: " + archivePathNodeEntry.getKey()));
+                    Archive<?> compiled = compile(weavingLib.getFilteredArchive(), aspects, weavingDescriptor);
+                    $.forEach(compiled.getContent().entrySet(), node -> LOG.trace("Compiled node: " + node.getKey()));
 
-                    // merge compiled classes back to container
-                    Archive replace = mergeArchive(weave.getValue0().getArchive(), compiled);
+                    // merge compiled classes back to inner container
+                    compiled = mergeArchive(weavingLib.getSearchResult().getArchive(), compiled);
 
                     // merge all aspect libraries into recompiled aspect so they are available for sure
                     for (Archive<?> aspect : $.concat(COMPILER.getRuntimeLibraries(), aspects))
                     {
-                        replace = mergeArchive(replace, aspect); // todo: this got deprecated
+                        compiled = mergeArchive(compiled, aspect); // TODO: compiler already adds aspects to weaving output
                     }
 
                     // merge recompiled archive back to root container
-                    ArchiveSearch.replaceArchive(deployableArchive, weave.getValue0().getPath(), replace);
+                    ArchiveSearch.replaceArchive(deployableArchive, weavingLib.getSearchResult().getPath(), compiled);
                 }
             }
         }
@@ -130,8 +125,7 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
         return Collections.unmodifiableList(returns);
     }
 
-    // returns <archive search result, archive filtered>
-    private List<Pair<ArchiveSearch.ArchiveSearchResult, Archive>> getWeavingLibraries(Archive<?> sourceArchive, WeavingLibrary weavingDescriptor)
+    private List<WeavingLibrarySearchResult> getWeavingLibraries(Archive<?> sourceArchive, WeavingLibrary weavingDescriptor)
     {
         String pattern;
         if (weavingDescriptor.isWeaveEverything())
@@ -142,18 +136,20 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
         {
             pattern = MatcherUtils.transformToMatchAnyParent(weavingDescriptor.getName());
         }
-        List<Pair<ArchiveSearch.ArchiveSearchResult, Archive>> returns = new ArrayList<>();
-        List<ArchiveSearch.ArchiveSearchResult> weavings = ArchiveSearch.searchInArchive(sourceArchive, pattern, false);
+        List<ArchiveSearch.ArchiveSearchResult> searchResults = ArchiveSearch.searchInArchive(sourceArchive, pattern, false);
+        List<WeavingLibrarySearchResult> weavingLibs = new ArrayList<>();
 
-        if (!$.isEmpty(weavings))
+        if (!$.isEmpty(searchResults))
         {
-            for (ArchiveSearch.ArchiveSearchResult weaving : weavings)
+            for (ArchiveSearch.ArchiveSearchResult searchResult : searchResults)
             {
                 List<String> includes = MatcherUtils.transformToMatchAnyChild(weavingDescriptor.getIncludes());
                 List<String> excludes = MatcherUtils.transformToMatchAnyChild(weavingDescriptor.getExcludes());
 
-                Archive<?> filtered = ArchiveSearch.filterArchive(weaving.getArchive(), includes, excludes);
-                returns.add(new Pair<>(weaving, filtered));
+                Archive<?> filtered = ArchiveSearch.filterArchive(searchResult.getArchive(), includes, excludes);
+                weavingLibs.add(new WeavingLibrarySearchResult()
+                        .setFilteredArchive(filtered)
+                        .setSearchResult(searchResult));
             }
         }
         else
@@ -161,9 +157,8 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
             String msg = String.format("Weaving %s could not be found in deployable", weavingDescriptor.getName());
             throw new RuntimeException(msg);
         }
-
-        $.forEach(returns, archive -> LOG.info(String.format("Found weaving library %s", archive.getValue0().getPath())));
-        return Collections.unmodifiableList(returns);
+        $.forEach(weavingLibs, archive -> LOG.info(String.format("Found weaving library %s", archive.getSearchResult().getPath())));
+        return Collections.unmodifiableList(weavingLibs);
     }
 
     private AspectjDescriptorModel getConfigurationFromArchive(Archive<?> archive)
@@ -223,5 +218,34 @@ public class ArchiveProcessor implements ApplicationArchiveProcessor
             container = container.merge(child);
         }
         return container;
+    }
+
+    static class WeavingLibrarySearchResult
+    {
+        private ArchiveSearch.ArchiveSearchResult searchResult;
+
+        private Archive<?> filteredArchive;
+
+        public Archive<?> getFilteredArchive()
+        {
+            return filteredArchive;
+        }
+
+        public WeavingLibrarySearchResult setFilteredArchive(Archive<?> filteredArchive)
+        {
+            this.filteredArchive = filteredArchive;
+            return this;
+        }
+
+        public ArchiveSearch.ArchiveSearchResult getSearchResult()
+        {
+            return searchResult;
+        }
+
+        public WeavingLibrarySearchResult setSearchResult(ArchiveSearch.ArchiveSearchResult searchResult)
+        {
+            this.searchResult = searchResult;
+            return this;
+        }
     }
 }
