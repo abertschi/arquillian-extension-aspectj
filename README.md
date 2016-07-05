@@ -86,7 +86,7 @@ String json = AspectjDescriptor
 ```java
 String json = AspectjDescriptor
         .create()
-        .weave()
+        .weaveRootArchive()
         .aspectLibrary("ch.abertschi:myaspects:1.0.0")
         .filter(Filters.exclude(DebuggingAspect.class.getPackage()))
         .addAspectLibrary()
