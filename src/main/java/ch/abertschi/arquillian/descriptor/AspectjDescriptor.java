@@ -40,7 +40,7 @@ public class AspectjDescriptor implements AspectjDescriptorBuilder
     }
 
     @Override
-    public WeavingLibraryOptionInitial weave()
+    public WeavingLibraryOptionInitial weaveRootArchive()
     {
         WeavingBuilder builder = new WeavingBuilder(this);
         mWeavingBuilders.add(builder);

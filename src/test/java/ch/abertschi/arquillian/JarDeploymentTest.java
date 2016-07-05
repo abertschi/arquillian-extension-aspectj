@@ -28,7 +28,7 @@ public class JarDeploymentTest
     {
         String json = AspectjDescriptor
                 .create()
-                .weave()
+                .weaveRootArchive()
                 .addWeaveDependency()
                 .exportAsString();
 

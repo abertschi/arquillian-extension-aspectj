@@ -28,7 +28,7 @@ public class WarDeploymentTest
     {
         String json = AspectjDescriptor
                 .create()
-                .weave()
+                .weaveRootArchive()
                 .addWeaveDependency()
                 .exportAsString();
 

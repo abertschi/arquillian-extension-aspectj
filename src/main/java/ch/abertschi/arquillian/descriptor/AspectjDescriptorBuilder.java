@@ -9,7 +9,7 @@ public interface AspectjDescriptorBuilder
 {
     WeavingLibraryOptionInitial weave(String name);
 
-    WeavingLibraryOptionInitial weave();
+    WeavingLibraryOptionInitial weaveRootArchive();
 
     String exportAsString();
 

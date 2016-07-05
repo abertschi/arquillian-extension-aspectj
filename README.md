@@ -33,7 +33,7 @@ The simplest configuration looks like shown below:
 ```java
 String json = AspectjDescriptor
         .create()
-        .weave()
+        .weaveRootArchive()
         .addWeaveDependency()
         .exportAsString();
 ```
@@ -75,7 +75,7 @@ Filtering by glob pattern, by package name and by class type is supported.
 ```java
 String json = AspectjDescriptor
         .create()
-        .weave()
+        .weaveRootArchive()
         .filter(Filters.include("**/*controller*"))
         .filter(Filters.include(Login.class, Logout.class))
         .filter(Filters.exclude(Debbuging.class.getPackage()))
@@ -101,7 +101,7 @@ To speed up the compile-time compilation process, you may activate caching.
 ```java
 String json = AspectjDescriptor
         .create()
-        .weave()
+        .weaveRootArchive()
         .useCache()
         .addWeaveDependency()
         .exportAsString();
@@ -109,6 +109,9 @@ String json = AspectjDescriptor
 The current cache implementation caches compiled artifacts based on their size.
 
 ## Arquillian test
+
+For more examples, see the [sample project](example/src/test/java/ch/abertschi/aspectj) and the [test classes](src/test/java/ch/abertschi/arquillian).
+
 ```java
 
 @RunWith(Arquillian.class)
@@ -122,7 +125,7 @@ public class JarDeploymentIT
     {
         String json = AspectjDescriptor
                 .create()
-                .weave()
+                .weaveRootArchive()
                 .addWeaveDependency()
                 .exportAsString();
 
@@ -214,3 +217,15 @@ This extension uses the Shrinkwrap Resolver Project to resolve necessary depende
 
 ## Bleeding Edge
 Get snapshot artifacts from [https://oss.sonatype.org/content/repositories/snapshots](https://oss.sonatype.org/content/repositories/snapshots/ch/abertschi/arquillian/arquillian-extension-aspectj/)
+
+## Development note
+
+The following scenarios are implemented
+
+- [x] ajc compile JAR deployments
+- [x] ajc compile WAR deployments (/WEB-INF/classes)
+- [x] ajc compile JAR in WAR deployments (/WEB-INF/lib/)
+- [x] ajc compile JAR in EAR deployments
+- [] ajc compile WAR in EAR deployments
+- [] ajc compile JAR in WAR in EAR deployments
+
