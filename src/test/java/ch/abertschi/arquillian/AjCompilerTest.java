@@ -34,10 +34,6 @@ public class AjCompilerTest
         JavaArchive weaving = ShrinkWrap.create(JavaArchive.class, "weaving.jar")
                 .addPackage(Greeting.class.getPackage())
                 .addClass(SayArquillianAspect.class);
-
-        JavaArchive aspects = ShrinkWrap.create(JavaArchive.class, "aspects.jar")
-                .addClass(SayArquillianAspect.class);
-
         AjCompiler c = new AjCompiler();
 
         // when
@@ -53,6 +49,4 @@ public class AjCompilerTest
     {
         Assert.isTrue(new AjCompiler().getRuntimeLibraries().size() > 0);
     }
-
-
 }

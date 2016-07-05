@@ -20,7 +20,6 @@ import javax.inject.Inject;
 @RunWith(Arquillian.class)
 public class WarDeploymentTest
 {
-
     @Inject
     DummyGreeter greeter;
 
