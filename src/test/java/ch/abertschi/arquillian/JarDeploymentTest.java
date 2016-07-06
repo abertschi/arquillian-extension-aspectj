@@ -11,7 +11,9 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import javax.inject.Inject;
@@ -22,6 +24,10 @@ public class JarDeploymentTest
 {
     @Inject
     DummyGreeter greeter;
+
+
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
 
     @Deployment
     public static Archive<?> deploy()

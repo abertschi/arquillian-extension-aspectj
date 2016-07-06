@@ -27,7 +27,6 @@ public class Cache
     private Cache(File cacheFile)
     {
         this.cacheHomeDir = cacheFile;
-
     }
 
     public static Cache create(File location)
